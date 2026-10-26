@@ -9,7 +9,7 @@ spring:
     name: velora-backend
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/velora}
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/velora}
       auto-index-creation: true
   servlet:
     multipart:
