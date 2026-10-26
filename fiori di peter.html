@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="it" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiori di Peter | Luxury Botanical Atelier & E-Commerce 3D</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Three.js for Full-Screen Fixed 3D Blooming Peony/Lotus -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            botanical: {
+              50: '#F4F7F4',
+              100: '#E3ECE4',
+              200: '#C5D8C7',
+              600: '#2D5A40',
+              700: '#214430',
+              800: '#163022',
+              900: '#0D1E15',
+              950: '#07110C',
+            },
+            cream: '#FAF7F2',
+            ivory: '#F2ECE1',
+            petal: '#F3D6CE',
+            blush: '#E8B4A8',
+            clay: '#C86D5B',
+            gold: '#D4AF37',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #FAF7F2; }
+    ::-webkit-scrollbar-thumb { background: #163022; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #C86D5B; }
+
+    /* 1. FULL-SCREEN FIXED 3D FLOWER BACKGROUND */
+    #bg-flower-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      transition: filter 0.8s ease;
+    }
+
+    /* Ambient glass veil so text is always crisp over the 3D flower */
+    .section-glass-light {
+      background: rgba(250, 247, 242, 0.68);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .section-glass-dark {
+      background: rgba(7, 17, 12, 0.78);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .section-glass-funeral {
+      background: rgba(24, 26, 30, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* 2. MAGIC UI: CONTINUOUS DYNAMIC BLUR-FADE ON SCROLL */
+    .blur-fade {
+      opacity: 0;
+      filter: blur(16px);
+      transform: translateY(35px) scale(0.96);
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+                  filter 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, filter, transform;
+    }
+    .blur-fade.in-view {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0px) scale(1);
+    }
+
+    /* 3. ACETERNITY UI: MULTI-LAYER 3D HERO PARALLAX */
+    .hero-parallax-stage {
+      perspective: 1500px;
+      transform-style: preserve-3d;
+      overflow: hidden;
+    }
+    #hero-3d-plane {
+      transform-style: preserve-3d;
+      will-change: transform;
+      transform: rotateX(22deg) rotateZ(-14deg) translateY(-50px) scale(0.92);
+    }
+    .parallax-track {
+      will-change: transform;
+      transform-style: preserve-3d;
+    }
+    .parallax-card {
+      transform-style: preserve-3d;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+    }
+    .parallax-card:hover {
+      transform: translateZ(45px) scale(1.04);
+      box-shadow: 0 30px 60px -12px rgba(7, 17, 12, 0.45);
+    }
+
+    /* 4. ACETERNITY UI: EXTREME 3D PERSPECTIVE TILT CARDS */
+    .tilt-card-scene {
+      perspective: 1100px;
+    }
+    .tilt-card-body {
+      transform-style: preserve-3d;
+      transition: transform 0.14s cubic-bezier(0.03, 0.98, 0.52, 0.99), box-shadow 0.35s ease;
+      will-change: transform;
+    }
+    .tilt-card-body:hover {
+      box-shadow: 0 35px 70px -15px rgba(13, 30, 21, 0.32);
+    }
+    .z-layer-badge {
+      transform: translateZ(45px);
+      transform-style: preserve-3d;
+    }
+    .z-layer-image {
+      transform: translateZ(20px);
+      transform-style: preserve-3d;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+    }
+    .tilt-card-body:hover .z-layer-image {
+      transform: translateZ(85px) scale(1.06);
+      box-shadow: 0 28px 50px -12px rgba(13, 30, 21, 0.45);
+    }
+    .z-layer-title {
+      transform: translateZ(55px);
+      transform-style: preserve-3d;
+    }
+    .z-layer-desc {
+      transform: translateZ(35px);
+      transform-style: preserve-3d;
+    }
+    .z-layer-btn {
+      transform: translateZ(70px);
+      transform-style: preserve-3d;
+    }
+
+    /* Specular Cursor Glare on 3D Cards */
+    .tilt-glare {
+      position: absolute;
+      inset: 0;
+      border-radius: 2rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.65), transparent 60%);
+      mix-blend-mode: overlay;
+      z-index: 25;
+    }
+    .tilt-card-body:hover .tilt-glare {
+      opacity: 1;
+    }
+
+    /* 5. APPLE CARDS CAROUSEL */
+    .apple-carousel-track {
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .apple-carousel-track::-webkit-scrollbar { display: none; }
+    .apple-card-item {
+      scroll-snap-align: start;
+      transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .apple-card-item:hover {
+      transform: translateY(-8px) scale(1.015);
+    }
+
+    /* 6. RADAR SWEEP & PULSE FOR 10KM CHECKER */
+    @keyframes radarSweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .radar-beam {
+      background: conic-gradient(from 0deg, rgba(52, 211, 153, 0.42) 0deg, rgba(52, 211, 153, 0.08) 65deg, transparent 90deg);
+      animation: radarSweep 4s linear infinite;
+    }
+    @keyframes radarRingPulse {
+      0% { transform: scale(0.25); opacity: 0.85; }
+      100% { transform: scale(1.45); opacity: 0; }
+    }
+    .radar-pulse-ring {
+      animation: radarRingPulse 3.2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+
+<body class="bg-cream text-stone-800 font-sans antialiased overflow-x-hidden selection:bg-clay selection:text-white relative">
+
+  <!-- =====================================================================
+       1. FIXED FULL-SCREEN THREE.JS 3D BLOOMING FLOWER BACKGROUND
+       ===================================================================== -->
+  <div id="bg-flower-canvas" aria-hidden="true"></div>
+
+  <!-- Floating Bottom-Left Live 3D Bloom Indicator Pill -->
+  <div class="fixed bottom-5 left-5 z-40 pointer-events-auto">
+    <div class="flex items-center gap-3 px-4 py-2.5 rounded-full bg-botanical-950/85 backdrop-blur-xl border border-white/15 text-white shadow-2xl text-xs">
+      <span id="bloom-dot" class="w-2.5 h-2.5 rounded-full bg-clay animate-pulse"></span>
+      <span class="font-medium tracking-wide">Fiore 3D Background • Apertura: <strong id="bloom-pct-text" class="text-petal font-mono">12%</strong></span>
+      <span id="bloom-mood-tag" class="hidden sm:inline-block px-2 py-0.5 rounded-full bg-white/10 text-[10px] uppercase tracking-widest text-stone-300">Luce Botanica</span>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       TOP ANNOUNCEMENT BAR & GLASS NAVIGATION
+       ===================================================================== -->
+  <div class="relative z-50 bg-botanical-950 text-stone-200 text-xs py-2.5 px-4 border-b border-white/10">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span><strong>Fiori di Peter:</strong> Consegna espressa a mano garantita entro <strong>10 km</strong> dalla nostra bottega</span>
+      </div>
+      <div class="hidden md:flex items-center gap-5 text-[11px] text-stone-300">
+        <span>✨ Consegna Gratuita sopra 50,00 €</span>
+        <span>•</span>
+        <span>💌 Bigliettino scritto a mano da Peter incluso</span>
+        <span>•</span>
+        <button onclick="scrollToSection('radar-10km')" class="text-petal underline hover:text-white font-semibold">Controlla il tuo CAP →</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="sticky top-0 z-40 bg-cream/75 backdrop-blur-xl border-b border-stone-300/60 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+      
+      <!-- Left Navigation -->
+      <nav class="hidden lg:flex items-center gap-7 text-xs font-bold uppercase tracking-[0.18em] text-stone-700">
+        <a href="#hero-parallax" class="hover:text-clay transition-colors">Parallax 3D</a>
+        <a href="#catalogo-3d" class="hover:text-clay transition-colors">Card 3D</a>
+        <a href="#apple-carousel-sec" class="hover:text-clay transition-colors">Apple Carousel</a>
+        <a href="#radar-10km" class="hover:text-clay transition-colors">Raggio 10 km</a>
+        <a href="#arte-funebre" class="text-stone-500 hover:text-stone-950 transition-colors flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-stone-500"></span> Arte Funebre
+        </a>
+      </nav>
+
+      <!-- Center Brand Logo -->
+      <a href="#" class="text-center group flex flex-col items-center">
+        <span class="font-serif text-3xl sm:text-4xl tracking-tight text-botanical-950 font-semibold leading-none">Fiori di Peter</span>
+        <span class="text-[9px] uppercase tracking-[0.38em] text-clay font-bold mt-1">Atelier Botanico • Raggio 10 KM</span>
+      </a>
+
+      <!-- Right Actions -->
+      <div class="flex items-center gap-3">
+        <button onclick="scrollToSection('radar-10km')" id="nav-radius-pill" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-full bg-white/85 border border-stone-300 text-botanical-900 hover:bg-botanical-900 hover:text-white transition-all shadow-sm">
+          <svg class="w-3.5 h-3.5 text-clay" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span id="nav-radius-label">Verifica 10 km</span>
+        </button>
+
+        <button onclick="toggleCartDrawer(true)" class="relative flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-botanical-950 text-white hover:bg-clay transition-colors shadow-lg group" aria-label="Apri Carrello">
+          <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+          </svg>
+          <span class="text-xs font-semibold hidden sm:inline">Carrello</span>
+          <span id="cart-count-badge" class="bg-clay group-hover:bg-botanical-950 text-white text-[11px] font-bold px-2 py-0.5 rounded-full transition-colors">1</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       2. ACETERNITY UI: MULTI-LAYER 3D HERO PARALLAX ON SCROLL
+       ===================================================================== -->
+  <section id="hero-parallax" class="relative z-10 hero-parallax-stage min-h-[155vh] pt-10 pb-28">
+    
+    <!-- Editorial Hero Header (with Magic UI Blur-Fade) -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-20 pointer-events-none">
+      <div class="max-w-3xl bg-cream/75 backdrop-blur-md p-6 sm:p-10 rounded-[2.5rem] border border-white/80 shadow-2xl pointer-events-auto blur-fade in-view">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-botanical-950 text-petal text-xs font-semibold mb-5">
+          <span class="w-2 h-2 rounded-full bg-clay animate-ping"></span>
+          Scorri la pagina: il fiore 3D sullo sfondo sboccia in tempo reale
+        </div>
+
+        <h1 class="font-serif text-5xl sm:text-6xl lg:text-7xl leading-[0.98] text-botanical-950 font-semibold tracking-tight">
+          L'arte dei fiori che <span class="italic font-normal text-clay">prende vita</span> mentre scorri.
+        </h1>
+
+        <p class="mt-5 text-stone-700 text-base sm:text-lg leading-relaxed">
+          Benvenuti nell'atelier digitale di <strong>Fiori di Peter</strong>. Mazzi sartoriali freschi di giornata, piante rare in terracotta e omaggi solenni, recapitati esclusivamente a mano entro <strong>10 km</strong> dalla nostra bottega.
+        </p>
+
+        <div class="mt-7 flex flex-wrap items-center gap-3.5">
+          <button onclick="scrollToSection('catalogo-3d')" class="px-7 py-4 bg-botanical-950 hover:bg-clay text-white rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-xl hover:scale-105">
+            Prova le Card 3D Interattive →
+          </button>
+          <button onclick="scrollToSection('apple-carousel-sec')" class="px-6 py-4 bg-white/90 hover:bg-white text-botanical-950 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider border border-stone-300 transition-all">
+            Apple Cards Carousel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aceternity 3D Tilted Plane with 3 Alternating Parallax Rows -->
+    <div id="hero-3d-plane" class="relative z-10 -mt-10 sm:-mt-20 space-y-7 py-8">
+      <!-- Row 1: Moves Right on Scroll -->
+      <div id="parallax-row-1" class="parallax-track flex gap-6 px-4 w-max"></div>
+      <!-- Row 2: Moves Left on Scroll -->
+      <div id="parallax-row-2" class="parallax-track flex gap-6 px-4 w-max"></div>
+      <!-- Row 3: Moves Right on Scroll -->
+      <div id="parallax-row-3" class="parallax-track flex gap-6 px-4 w-max"></div>
+    </div>
+
+  </section>
+
+  <!-- =====================================================================
+       3. ACETERNITY UI: 3D PERSPECTIVE TILT CARDS (Vasi, Bouquet, Cerimonie)
+       ===================================================================== -->
+  <section id="catalogo-3d" class="relative z-10 py-24 section-glass-light border-y border-stone-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      
+      <!-- Header + Category Filters -->
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between mb-14 gap-6 blur-fade">
+        <div>
+          <span class="text-xs uppercase tracking-[0.28em] text-clay font-bold">Aceternity 3D Perspective Cards</span>
+          <h2 class="font-serif text-4xl sm:text-6xl text-botanical-950 mt-1 font-semibold">Vasi e Bouquet in Prospettiva 3D.</h2>
+          <p class="text-stone-600 text-sm sm:text-base mt-2 max-w-2xl">
+            Passa il cursore sulle card: il vaso o il mazzo si solleva fisicamente a <strong>85px di profondità Z</strong> con riflesso di luce dinamico, mentre sullo sfondo il fiore 3D continua a sbocciare.
+          </p>
+        </div>
+
+        <!-- Interactive Filter Tabs -->
+        <div class="flex flex-wrap gap-2">
+          <button onclick="filterCatalog('all')" data-cat="all" class="cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-botanical-950 text-white shadow-md transition-all">Tutti (6)</button>
+          <button onclick="filterCatalog('bouquet')" data-cat="bouquet" class="cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/90 text-stone-700 border border-stone-300 hover:border-botanical-900 transition-all">Bouquet Freschi</button>
+          <button onclick="filterCatalog('piante')" data-cat="piante" class="cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/90 text-stone-700 border border-stone-300 hover:border-botanical-900 transition-all">Piante & Vasi</button>
+          <button onclick="filterCatalog('composizioni')" data-cat="composizioni" class="cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/90 text-stone-700 border border-stone-300 hover:border-botanical-900 transition-all">Composizioni</button>
+          <button onclick="filterCatalog('funebre')" data-cat="funebre" class="cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/90 text-stone-700 border border-stone-300 hover:border-botanical-900 transition-all">Omaggi Funebri</button>
+        </div>
+      </div>
+
+      <!-- 3D Tilt Cards Grid -->
+      <div id="tilt-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"></div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       4. APPLE CARDS CAROUSEL (Horizontal Parallax + Expandable Modal)
+       ===================================================================== -->
+  <section id="apple-carousel-sec" class="relative z-10 py-24 section-glass-dark text-white border-b border-white/10 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 mb-12 flex flex-col md:flex-row md:items-end justify-between blur-fade">
+      <div>
+        <span class="text-xs uppercase tracking-[0.3em] text-petal font-bold">Apple Cards Carousel • Multi-Depth Scroll</span>
+        <h2 class="font-serif text-4xl sm:text-6xl text-white mt-2 font-semibold">Le Quattro Anime di Peter.</h2>
+        <p class="text-stone-300 text-sm sm:text-base mt-2 max-w-xl">
+          Scorri orizzontalmente le card editoriali: le fotografie interne traslano su livelli diversi in parallasse. Clicca una card per aprire la scheda immersiva.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 mt-6 md:mt-0">
+        <button onclick="scrollAppleTrack(-1)" class="w-12 h-12 rounded-full bg-white/10 hover:bg-clay border border-white/20 flex items-center justify-center text-white transition-all" aria-label="Scorri a sinistra">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="scrollAppleTrack(1)" class="w-12 h-12 rounded-full bg-white/10 hover:bg-clay border border-white/20 flex items-center justify-center text-white transition-all" aria-label="Scorri a destra">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Horizontal Snap Apple Cards Track -->
+    <div id="apple-carousel-track" onscroll="handleAppleInternalParallax()" class="apple-carousel-track flex gap-7 overflow-x-auto px-4 sm:px-6 max-w-7xl mx-auto pb-8 blur-fade">
+      
+      <!-- Card 1 -->
+      <div onclick="openAppleCardModal(0)" class="apple-card-item relative shrink-0 w-[310px] sm:w-[390px] h-[500px] sm:h-[560px] rounded-[2.2rem] overflow-hidden cursor-pointer group border border-white/15 shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=1000&q=80" alt="Bouquet d'Autore" class="apple-parallax-img w-[120%] max-w-none h-full object-cover -ml-[10%] transition-transform duration-300">
+        <div class="absolute inset-0 bg-gradient-to-b from-black/75 via-black/15 to-black/85"></div>
+        <div class="absolute top-8 left-8 right-8">
+          <span class="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.25em] text-petal">Reparto 01 • Giornaliero</span>
+          <h3 class="font-serif text-3xl sm:text-4xl text-white mt-3 leading-tight font-semibold">Bouquet d'Autore & Fiori Recisi</h3>
+        </div>
+        <div class="absolute bottom-8 left-8 right-8 flex items-end justify-between">
+          <p class="text-xs text-stone-200 max-w-[230px] leading-relaxed">Peonie, ranuncoli, rose David Austin ed eucalipto legati a mano in acqua ogni mattina.</p>
+          <span class="w-11 h-11 rounded-full bg-white text-botanical-950 flex items-center justify-center font-bold text-lg group-hover:bg-clay group-hover:text-white transition-colors shadow-lg">+</span>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div onclick="openAppleCardModal(1)" class="apple-card-item relative shrink-0 w-[310px] sm:w-[390px] h-[500px] sm:h-[560px] rounded-[2.2rem] overflow-hidden cursor-pointer group border border-white/15 shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1000&q=80" alt="Piante e Vasi d'Arredo" class="apple-parallax-img w-[120%] max-w-none h-full object-cover -ml-[10%] transition-transform duration-300">
+        <div class="absolute inset-0 bg-gradient-to-b from-black/75 via-black/15 to-black/85"></div>
+        <div class="absolute top-8 left-8 right-8">
+          <span class="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-300">Reparto 02 • Indoor Design</span>
+          <h3 class="font-serif text-3xl sm:text-4xl text-white mt-3 leading-tight font-semibold">Piante & Vasi d'Arredo in Terracotta</h3>
+        </div>
+        <div class="absolute bottom-8 left-8 right-8 flex items-end justify-between">
+          <p class="text-xs text-stone-200 max-w-[230px] leading-relaxed">Monstera variegata, Ficus Lyrata, Strelitzia e orchidee in vasi artigianali toscani.</p>
+          <span class="w-11 h-11 rounded-full bg-white text-botanical-950 flex items-center justify-center font-bold text-lg group-hover:bg-clay group-hover:text-white transition-colors shadow-lg">+</span>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div onclick="openAppleCardModal(2)" class="apple-card-item relative shrink-0 w-[310px] sm:w-[390px] h-[500px] sm:h-[560px] rounded-[2.2rem] overflow-hidden cursor-pointer group border border-white/15 shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1000&q=80" alt="Eventi e Matrimoni" class="apple-parallax-img w-[120%] max-w-none h-full object-cover -ml-[10%] transition-transform duration-300">
+        <div class="absolute inset-0 bg-gradient-to-b from-black/75 via-black/15 to-black/85"></div>
+        <div class="absolute top-8 left-8 right-8">
+          <span class="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.25em] text-amber-200">Reparto 03 • Cerimonie</span>
+          <h3 class="font-serif text-3xl sm:text-4xl text-white mt-3 leading-tight font-semibold">Eventi, Lauree & Matrimoni</h3>
+        </div>
+        <div class="absolute bottom-8 left-8 right-8 flex items-end justify-between">
+          <p class="text-xs text-stone-200 max-w-[230px] leading-relaxed">Corone d'alloro personalizzate, Hat-Box di rose vellutate e centrotavola scenografici.</p>
+          <span class="w-11 h-11 rounded-full bg-white text-botanical-950 flex items-center justify-center font-bold text-lg group-hover:bg-clay group-hover:text-white transition-colors shadow-lg">+</span>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div onclick="openAppleCardModal(3)" class="apple-card-item relative shrink-0 w-[310px] sm:w-[390px] h-[500px] sm:h-[560px] rounded-[2.2rem] overflow-hidden cursor-pointer group border border-white/15 shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1000&q=80" alt="Arte Funebre" class="apple-parallax-img w-[120%] max-w-none h-full object-cover -ml-[10%] transition-transform duration-300">
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-900/25 to-slate-950/90"></div>
+        <div class="absolute top-8 left-8 right-8">
+          <span class="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.25em] text-stone-300">Reparto 04 • Cordoglio</span>
+          <h3 class="font-serif text-3xl sm:text-4xl text-white mt-3 leading-tight font-semibold">Arte Funebre & Omaggi di Memoria</h3>
+        </div>
+        <div class="absolute bottom-8 left-8 right-8 flex items-end justify-between">
+          <p class="text-xs text-stone-300 max-w-[230px] leading-relaxed">Cuscini, corone e composizioni sobrie con nastro stampato in oro e consegna puntuale in chiesa.</p>
+          <span class="w-11 h-11 rounded-full bg-white text-botanical-950 flex items-center justify-center font-bold text-lg group-hover:bg-clay group-hover:text-white transition-colors shadow-lg">+</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       5. 10 KM LOCAL DELIVERY RADIUS RADAR CHECKER
+       ===================================================================== -->
+  <section id="radar-10km" class="relative z-10 py-24 section-glass-light border-b border-stone-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Left Column: Distance Simulator -->
+      <div class="lg:col-span-7 space-y-6 blur-fade">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-botanical-950 text-petal text-xs font-semibold">
+          <span>📍 Consegna Esclusiva di Prossimità • Max 10.0 km</span>
+        </div>
+
+        <h2 class="font-serif text-4xl sm:text-6xl text-botanical-950 leading-tight font-semibold">
+          Fiori mai stressati: consegniamo solo entro <span class="underline decoration-clay">10 km</span>.
+        </h2>
+
+        <p class="text-stone-700 text-sm sm:text-base leading-relaxed">
+          Per garantire che ogni petalo arrivi idratato e intatto come appena colto, il furgone climatizzato di <strong>Fiori di Peter</strong> copre esclusivamente un raggio di 10 km dalla nostra bottega. Verifica subito il tuo indirizzo o simula una distanza sul radar:
+        </p>
+
+        <div class="bg-white/95 p-6 sm:p-8 rounded-[2rem] shadow-xl border border-stone-200 space-y-4">
+          <label class="block text-xs font-bold uppercase tracking-wider text-stone-500">Inserisci CAP o Via di consegna</label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input id="radar-input" type="text" placeholder="Es. 00184, Via Cavour, Piazza Navona..." class="flex-1 px-5 py-4 rounded-2xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-botanical-900 text-sm bg-cream">
+            <button onclick="checkCustomAddress()" class="px-8 py-4 bg-botanical-950 hover:bg-clay text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg">
+              Scansiona Radar
+            </button>
+          </div>
+
+          <!-- Quick Simulation Pills -->
+          <div class="flex flex-wrap items-center gap-2 pt-2 text-xs">
+            <span class="text-stone-400 font-semibold">Test rapido:</span>
+            <button onclick="setRadarPoint('Centro Storico (00184)', 2.4, 34, 62)" class="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 font-semibold transition-all">📍 2.4 km (Centro)</button>
+            <button onclick="setRadarPoint('Quartiere Prati (00192)', 6.8, 25, 32)" class="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300 hover:bg-emerald-100 font-semibold transition-all">📍 6.8 km (Collina)</button>
+            <button onclick="setRadarPoint('Zona Eur Sud (00144)', 9.5, 76, 68)" class="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 font-semibold transition-all">📍 9.5 km (Limite 10km)</button>
+            <button onclick="setRadarPoint('Provincia Esterna (00040)', 14.2, 12, 86)" class="px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-900 border border-rose-300 hover:bg-rose-100 font-semibold transition-all">🚫 14.2 km (Fuori Zona)</button>
+          </div>
+
+          <div id="radar-result-banner" class="hidden p-4 rounded-2xl border text-sm transition-all"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Animated Radar Sweep Map -->
+      <div class="lg:col-span-5 flex justify-center blur-fade">
+        <div class="relative w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-botanical-950 border-8 border-white shadow-2xl flex items-center justify-center overflow-hidden">
+          <!-- Rotating Conic Radar Sweep -->
+          <div class="absolute inset-0 rounded-full radar-beam pointer-events-none"></div>
+
+          <!-- Concentric Distance Rings (3km, 6km, 10km) -->
+          <div class="absolute inset-6 rounded-full border border-emerald-400/35"></div>
+          <div class="absolute inset-16 rounded-full border border-emerald-400/30"></div>
+          <div class="absolute inset-28 rounded-full border border-emerald-400/25"></div>
+          <div class="absolute w-full h-[1px] bg-emerald-400/20"></div>
+          <div class="absolute h-full w-[1px] bg-emerald-400/20"></div>
+
+          <!-- Expanding Pulse Ring -->
+          <div class="w-64 h-64 rounded-full border-2 border-emerald-400/50 radar-pulse-ring absolute pointer-events-none"></div>
+
+          <!-- Center Store Pin -->
+          <div class="relative z-20 flex flex-col items-center">
+            <div class="w-11 h-11 rounded-full bg-clay text-white flex items-center justify-center shadow-xl border-2 border-white text-lg">
+              🌸
+            </div>
+            <span class="mt-1 px-2.5 py-0.5 rounded-full bg-black/85 text-white text-[10px] font-bold uppercase tracking-wider">Bottega Peter (0 km)</span>
+          </div>
+
+          <!-- Dynamic Customer Target Pin -->
+          <div id="radar-target-pin" class="absolute z-30 flex flex-col items-center transition-all duration-500" style="top: 34%; left: 62%;">
+            <div id="radar-target-dot" class="w-4 h-4 rounded-full bg-emerald-400 ring-4 ring-emerald-400/40 animate-bounce"></div>
+            <span id="radar-target-label" class="mt-1 px-2 py-0.5 rounded bg-white text-botanical-950 text-[10px] font-bold shadow-md">2.4 km</span>
+          </div>
+
+          <div class="absolute bottom-4 text-[10px] uppercase tracking-widest text-emerald-300/90 font-mono bg-black/50 px-3 py-0.5 rounded-full">
+            Raggio Max Garantito: 10.0 KM
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       6. ARTE FUNEBRE & LUTTO CONFIGURATOR (Triggers Solemn Silver 3D Flower Light)
+       ===================================================================== -->
+  <section id="arte-funebre" class="relative z-10 py-28 section-glass-funeral text-stone-100 border-b border-stone-700/60">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      
+      <div class="max-w-3xl mb-14 blur-fade">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-stone-300 text-xs font-semibold mb-3">
+          <span>🕊️ Illuminazione 3D Solenne Attiva • Rispetto e Puntualità</span>
+        </div>
+        <h2 class="font-serif text-4xl sm:text-6xl text-white mt-1 font-semibold">Arte Funebre & Omaggi di Cordoglio.</h2>
+        <p class="text-stone-300 text-sm sm:text-base mt-3 leading-relaxed">
+          Quando scorri in questa sezione, anche il fiore 3D sullo sfondo assume una luce argentea e raccolta. Personalizza il <strong>Nastro di Cordoglio in raso con stampa in lamina d'oro</strong> e indica il luogo della cerimonia entro 10 km.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        
+        <!-- Left: 3 Funeral Tribute Options -->
+        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 blur-fade">
+          
+          <!-- Tribute 1 -->
+          <div class="bg-stone-900/90 rounded-3xl p-5 border border-stone-700/80 shadow-xl flex flex-col justify-between">
+            <div>
+              <div class="relative h-56 rounded-2xl overflow-hidden mb-4">
+                <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80" alt="Cuscino Funebre Candore" class="w-full h-full object-cover">
+                <span class="absolute top-3 left-3 bg-black/75 text-stone-200 text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full">Nastro Oro Incluso</span>
+              </div>
+              <h3 class="font-serif text-2xl text-white font-semibold">Cuscino Floreale "Candore"</h3>
+              <p class="text-xs text-stone-400 mt-1 leading-relaxed">Rose bianche avalanche, lilium orientali candidi, lisianthus e fronde nobili.</p>
+            </div>
+            <div class="mt-5 pt-4 border-t border-stone-800 flex items-center justify-between">
+              <span class="text-xl font-bold text-amber-300">95,00 €</span>
+              <button onclick="selectFuneralItem('Cuscino Floreale Candore', 95, 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80')" class="px-4 py-2.5 bg-white text-stone-950 hover:bg-amber-300 text-xs font-bold rounded-xl transition-colors">
+                Configura Nastro →
+              </button>
+            </div>
+          </div>
+
+          <!-- Tribute 2 -->
+          <div class="bg-stone-900/90 rounded-3xl p-5 border border-stone-700/80 shadow-xl flex flex-col justify-between">
+            <div>
+              <div class="relative h-56 rounded-2xl overflow-hidden mb-4">
+                <img src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80" alt="Corona Solenne su Cavalletto" class="w-full h-full object-cover">
+                <span class="absolute top-3 left-3 bg-black/75 text-stone-200 text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full">Alta Cerimonia</span>
+              </div>
+              <h3 class="font-serif text-2xl text-white font-semibold">Corona su Cavalletto "Eternità"</h3>
+              <p class="text-xs text-stone-400 mt-1 leading-relaxed">Grande corona circolare lavorata a mano con orchidee bianche, rose crema e ulivo.</p>
+            </div>
+            <div class="mt-5 pt-4 border-t border-stone-800 flex items-center justify-between">
+              <span class="text-xl font-bold text-amber-300">165,00 €</span>
+              <button onclick="selectFuneralItem('Corona su Cavalletto Eternità', 165, 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80')" class="px-4 py-2.5 bg-white text-stone-950 hover:bg-amber-300 text-xs font-bold rounded-xl transition-colors">
+                Configura Nastro →
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: Live Silk Bereavement Ribbon & Venue Configurator -->
+        <div id="funeral-config-card" class="lg:col-span-5 bg-stone-900/95 rounded-[2rem] p-6 sm:p-8 border border-stone-700 shadow-2xl space-y-5 blur-fade">
+          <div class="flex items-center justify-between border-b border-stone-800 pb-4">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-300">Personalizzazione Omaggio</span>
+              <h4 id="funeral-config-title" class="font-serif text-2xl sm:text-3xl text-white font-semibold mt-0.5">Cuscino Floreale "Candore"</h4>
+            </div>
+            <span id="funeral-config-price" class="text-xl font-bold text-amber-300">95,00 €</span>
+          </div>
+
+          <!-- Ribbon Input + Gold Foil Live Preview -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-stone-300 mb-2">Testo sul Nastro di Cordoglio (Max 45 caratteri)</label>
+            <input id="ribbon-text-input" type="text" maxlength="45" value="Con profondo affetto, Famiglia Rossi" class="w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+            
+            <div class="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-stone-950 via-stone-900 to-stone-950 border border-amber-500/40 shadow-inner text-center">
+              <span class="block text-[9px] uppercase tracking-[0.3em] text-stone-400 mb-1">Anteprima Nastro in Raso & Oro</span>
+              <p class="font-serif italic text-lg sm:text-xl text-amber-300 tracking-wide">
+                ✦ <span id="ribbon-live-preview">Con profondo affetto, Famiglia Rossi</span> ✦
+              </p>
+            </div>
+          </div>
+
+          <!-- Delivery Venue Type & Ceremony Time -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-stone-300 mb-1.5">Luogo di Consegna</label>
+              <select id="funeral-venue-type" class="w-full px-3.5 py-3 rounded-xl bg-stone-950 border border-stone-700 text-xs text-white">
+                <option value="Chiesa / Parrocchia">Chiesa / Parrocchia</option>
+                <option value="Camera Ardente / Ospedale">Camera Ardente / Ospedale</option>
+                <option value="Cimitero Comunale">Cimitero Comunale</option>
+                <option value="Domicilio Famiglia">Domicilio della Famiglia</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-stone-300 mb-1.5">Orario Cerimonia</label>
+              <select id="funeral-ceremony-time" class="w-full px-3.5 py-3 rounded-xl bg-stone-950 border border-stone-700 text-xs text-white">
+                <option value="Entro le ore 09:30">Entro le ore 09:30</option>
+                <option value="Entro le ore 11:00">Entro le ore 11:00</option>
+                <option value="Entro le ore 15:00">Entro le ore 15:00</option>
+                <option value="Entro le ore 16:30">Entro le ore 16:30</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-stone-300 mb-1.5">Nome Defunto / Indicazioni Chiesa (entro 10 km)</label>
+            <input id="funeral-venue-detail" type="text" placeholder="Es. Fam. Bianchi - Chiesa Santa Maria in Trastevere" class="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-xs text-white">
+          </div>
+
+          <button onclick="addFuneralTributeToCart()" class="w-full py-4 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-xl">
+            Aggiungi Omaggio con Nastro al Carrello →
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="relative z-10 bg-botanical-950/95 text-stone-400 py-16 border-t border-white/10 text-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div class="md:col-span-2 space-y-3">
+        <span class="font-serif text-3xl text-white font-semibold">Fiori di Peter</span>
+        <p class="text-xs text-stone-400 max-w-sm leading-relaxed">
+          Atelier botanico artigianale. Progettiamo mazzi freschi di giornata, piante in terracotta e allestimenti per eventi con consegna diretta garantita entro 10 km.
+        </p>
+        <p class="text-xs text-petal font-semibold pt-2">📍 Via delle Camelie 18 • Tel. 06 555 8921 • Aperto 7 giorni su 7</p>
+      </div>
+      <div>
+        <h5 class="text-xs font-bold uppercase tracking-widest text-white mb-3">Esperienza 3D</h5>
+        <ul class="space-y-2 text-xs">
+          <li><a href="#hero-parallax" class="hover:text-white">Hero Parallax 3D</a></li>
+          <li><a href="#catalogo-3d" class="hover:text-white">Card Prospettiva 3D</a></li>
+          <li><a href="#apple-carousel-sec" class="hover:text-white">Apple Cards Carousel</a></li>
+          <li><a href="#arte-funebre" class="hover:text-white">Configuratore Nastro Funebre</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 class="text-xs font-bold uppercase tracking-widest text-white mb-3">Freschezza Garantita</h5>
+        <p class="text-xs leading-relaxed">
+          Lavoriamo solo fiori freschi appena arrivati in bottega: ogni creazione viaggia in acqua sul nostro mezzo dedicato entro 10 km.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- =====================================================================
+       APPLE CARD EXPANDED BLURRED MODAL
+       ===================================================================== -->
+  <div id="apple-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-xl">
+    <div class="bg-cream text-stone-800 max-w-2xl w-full rounded-[2.2rem] overflow-hidden shadow-2xl border border-white/30">
+      <div class="relative h-64 sm:h-80">
+        <img id="apple-modal-img" src="" alt="" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <button onclick="closeAppleCardModal()" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/60 text-white hover:bg-clay flex items-center justify-center font-bold">✕</button>
+        <div class="absolute bottom-6 left-6 right-6 text-white">
+          <span id="apple-modal-tag" class="text-xs uppercase tracking-widest text-petal font-bold"></span>
+          <h3 id="apple-modal-title" class="font-serif text-3xl sm:text-5xl mt-1 font-semibold"></h3>
+        </div>
+      </div>
+      <div class="p-6 sm:p-8 space-y-5">
+        <p id="apple-modal-desc" class="text-stone-600 text-sm sm:text-base leading-relaxed"></p>
+        <div class="p-4 rounded-2xl bg-botanical-50 border border-botanical-100 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-bold text-botanical-900 uppercase">Consegna Diretta entro 10 km</p>
+            <p class="text-xs text-stone-600">Preparato a mano da Peter con biglietto calligrafico gratuito.</p>
+          </div>
+          <button onclick="closeAppleCardModal(); scrollToSection('catalogo-3d');" class="px-6 py-3 bg-botanical-950 hover:bg-clay text-white rounded-full text-xs font-bold uppercase tracking-wider transition-colors">
+            Scegli dal Catalogo 3D →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       8. SLIDE-OVER CART DRAWER WITH LIVE HANDWRITTEN CARD PREVIEW
+       ===================================================================== -->
+  <div id="cart-backdrop" onclick="toggleCartDrawer(false)" class="fixed inset-0 bg-black/55 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300"></div>
+
+  <aside id="cart-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-cream z-50 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col justify-between border-l border-stone-200">
+    
+    <!-- Top Header + Free Shipping Progress -->
+    <div class="p-6 bg-white border-b border-stone-200">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-serif text-3xl text-botanical-950 font-semibold leading-none">Il Tuo Carrello</h3>
+          <p class="text-xs text-stone-500 mt-1">Consegna espressa nel raggio di 10 km</p>
+        </div>
+        <button onclick="toggleCartDrawer(false)" class="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-700 font-bold">✕</button>
+      </div>
+
+      <div class="bg-botanical-50 p-3.5 rounded-2xl border border-botanical-100">
+        <div class="flex justify-between text-xs font-semibold mb-1.5">
+          <span id="shipping-bar-label" class="text-botanical-900">Ti mancano 2,00 € per la consegna gratuita!</span>
+          <span id="shipping-bar-pct" class="text-clay font-bold">96%</span>
+        </div>
+        <div class="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+          <div id="shipping-bar-fill" class="h-full bg-botanical-800 transition-all duration-500" style="width: 96%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable Cart Content -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-5">
+      <div id="cart-items-container" class="space-y-3.5"></div>
+
+      <!-- Handwritten Greeting Card with Live Calligraphic Preview -->
+      <div class="bg-white p-4 rounded-2xl border border-stone-200 space-y-2.5">
+        <label class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-botanical-900">
+          <span>💌 Bigliettino scritto a mano da Peter</span>
+          <span class="text-emerald-700">Incluso Gratis</span>
+        </label>
+        <textarea id="greeting-card-input" rows="2" placeholder="Scrivi qui la tua dedica speciale..." class="w-full p-3 rounded-xl bg-cream border border-stone-200 text-xs focus:outline-none focus:ring-2 focus:ring-botanical-900">Tanti auguri di cuore, che questi fiori portino gioia!</textarea>
+        
+        <!-- Live Calligraphic Card Preview -->
+        <div class="p-3.5 rounded-xl bg-[#FDFBF7] border border-stone-300/80 shadow-inner">
+          <span class="block text-[9px] uppercase tracking-[0.25em] text-stone-400 mb-1">Anteprima Cartoncino Avorio</span>
+          <p id="greeting-card-preview" class="font-serif italic text-base text-botanical-950 leading-snug">
+            “Tanti auguri di cuore, che questi fiori portino gioia!”
+          </p>
+        </div>
+      </div>
+
+      <!-- Delivery Date & Time Slot -->
+      <div class="bg-white p-4 rounded-2xl border border-stone-200 space-y-3">
+        <p class="text-xs font-bold uppercase tracking-wider text-botanical-900">📅 Data e Fascia Oraria (Entro 10 km)</p>
+        <div class="grid grid-cols-2 gap-2.5">
+          <input id="cart-date" type="date" class="px-3 py-2 rounded-xl border border-stone-200 text-xs bg-cream">
+          <select id="cart-slot" class="px-3 py-2 rounded-xl border border-stone-200 text-xs bg-cream">
+            <option>Mattina (09:00 - 12:30)</option>
+            <option>Pomeriggio (14:30 - 18:00)</option>
+            <option>Sera (18:00 - 20:00)</option>
+            <option>Ritiro in Bottega (Gratis)</option>
+          </select>
+        </div>
+        <input id="cart-address" type="text" placeholder="CAP o Via destinatario (entro 10 km)" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs bg-cream">
+      </div>
+    </div>
+
+    <!-- Footer Totals -->
+    <div class="p-6 bg-white border-t border-stone-200 space-y-3">
+      <div class="space-y-1 text-xs text-stone-600">
+        <div class="flex justify-between">
+          <span>Subtotale Fiori</span>
+          <span id="cart-subtotal" class="font-semibold text-stone-900">48,00 €</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Consegna entro 10 km</span>
+          <span id="cart-shipping" class="font-semibold text-stone-900">5,00 €</span>
+        </div>
+        <div class="flex justify-between text-base font-bold text-botanical-950 pt-2 border-t border-stone-100">
+          <span>Totale Ordine</span>
+          <span id="cart-total">53,00 €</span>
+        </div>
+      </div>
+
+      <button onclick="completeMockOrder()" class="w-full py-4 bg-botanical-950 hover:bg-clay text-white rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-xl">
+        Conferma Ordine da Peter →
+      </button>
+
+      <div id="order-toast" class="hidden p-3 rounded-xl bg-emerald-900 text-white text-xs text-center font-medium"></div>
+    </div>
+  </aside>
+
+  <!-- =====================================================================
+       JAVASCRIPT ENGINE: 3D BACKGROUND FLOWER, PARALLAX, 3D TILT & CART
+       ===================================================================== -->
+  <script>
+    /* ---------------------------------------------------------------------
+       1. CATALOG DATA (Bouquets, Plants in Vases, Compositions, Funeral)
+       --------------------------------------------------------------------- */
+    const catalogProducts = [
+      {
+        id: 'p1',
+        name: 'Bouquet "Alba Provenzale"',
+        category: 'bouquet',
+        badge: 'Bestseller • Mazzo',
+        price: 48,
+        desc: 'Peonie rosa cipria, ranuncoli freschi, rose inglesi David Austin ed eucalipto profumato.',
+        img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80'
+      },
+      {
+        id: 'p2',
+        name: 'Monstera in Vaso di Terracotta',
+        category: 'piante',
+        badge: 'Vaso Artigianale',
+        price: 44,
+        desc: 'Pianta tropicale purificante h 75cm invasata in terracotta toscana lavorata a mano.',
+        img: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=80'
+      },
+      {
+        id: 'p3',
+        name: 'Hat-Box "Velluto Imperiale"',
+        category: 'composizioni',
+        badge: 'Luxury Box',
+        price: 68,
+        desc: '18 Rose rosse Red Naomi a bocciolo grande in cappelliera rigida avorio con riserva d’acqua.',
+        img: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80'
+      },
+      {
+        id: 'p4',
+        name: 'Mazzo "Sole di Campo"',
+        category: 'bouquet',
+        badge: 'Appena Colti',
+        price: 39,
+        desc: 'Tulipani doppi, camomilla selvatica, craspedia dorata e rami di ulivo mediterraneo.',
+        img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80'
+      },
+      {
+        id: 'p5',
+        name: 'Orchidea Phalaenopsis in Coppa',
+        category: 'piante',
+        badge: 'Vaso Ceramica',
+        price: 56,
+        desc: 'Orchidea bianca a cascata a doppio stelo in vaso di ceramica smaltata verde salvia.',
+        img: 'https://images.unsplash.com/photo-1566907225472-514215c9e5cd?auto=format&fit=crop&w=800&q=80'
+      },
+      {
+        id: 'p6',
+        name: 'Cuscino Sobrio "Luce Bianca"',
+        category: 'funebre',
+        badge: 'Arte Funebre',
+        price: 95,
+        desc: 'Composizione solenne con lilium bianchi, rose avalanche e nastro di cordoglio stampato in oro.',
+        img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80'
+      }
+    ];
+
+    /* ---------------------------------------------------------------------
+       2. FULL-SCREEN FIXED THREE.JS 3D BLOOMING LOTUS/PEONY FLOWER
+       --------------------------------------------------------------------- */
+    let bgScene, bgCamera, bgRenderer, bgFlowerGroup, bgParticles;
+    let bgPetalLayers = [];
+    let targetScrollRatio = 0.08;
+    let smoothScrollRatio = 0.08;
+    let isFuneralMood = false;
+    let pointLightWarm, dirLightMain;
+
+    function initFullScreen3DFlower() {
+      const container = document.getElementById('bg-flower-canvas');
+      if (!container || typeof THREE === 'undefined') return;
+
+      bgScene = new THREE.Scene();
+      bgCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+      bgCamera.position.set(0, 4.2, 7.8);
+      bgCamera.lookAt(0, 0.1, 0);
+
+      bgRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      bgRenderer.setSize(window.innerWidth, window.innerHeight);
+      bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(bgRenderer.domElement);
+
+      // Lighting that adapts between warm botanical and solemn funeral silver
+      const ambientLight = new THREE.AmbientLight(0xfff8f0, 0.85);
+      bgScene.add(ambientLight);
+
+      dirLightMain = new THREE.DirectionalLight(0xffe6d5, 1.25);
+      dirLightMain.position.set(6, 10, 6);
+      bgScene.add(dirLightMain);
+
+      pointLightWarm = new THREE.PointLight(0xd97f6c, 1.1, 20);
+      pointLightWarm.position.set(-4, 3, 4);
+      bgScene.add(pointLightWarm);
+
+      bgFlowerGroup = new THREE.Group();
+      bgScene.add(bgFlowerGroup);
+
+      // Golden Botanical Stamens Core
+      const coreGeo = new THREE.SphereGeometry(0.52, 32, 32);
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0xd4af37,
+        roughness: 0.3,
+        metalness: 0.35
+      });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      coreMesh.scale.set(1, 0.58, 1);
+      bgFlowerGroup.add(coreMesh);
+
+      // Delicate Golden Stamen Filaments around core
+      const stamenGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.55, 8);
+      const stamenMat = new THREE.MeshStandardMaterial({ color: 0xe5c158, roughness: 0.3 });
+      for (let s = 0; s < 28; s++) {
+        const stAngle = (s / 28) * Math.PI * 2;
+        const stMesh = new THREE.Mesh(stamenGeo, stamenMat);
+        stMesh.position.set(Math.cos(stAngle) * 0.52, 0.2, Math.sin(stAngle) * 0.52);
+        stMesh.rotation.z = Math.cos(stAngle) * 0.35;
+        stMesh.rotation.x = Math.sin(stAngle) * 0.35;
+        bgFlowerGroup.add(stMesh);
+      }
+
+      // Organic Curved Petals built in 4 concentric rings (38 petals total)
+      const ringsConfig = [
+        { count: 6,  scale: 0.78, color: 0xe28777, minTilt: 0.18, maxTilt: 0.58, yOffset: 0.08 },
+        { count: 8,  scale: 1.02, color: 0xedb0a3, minTilt: 0.25, maxTilt: 0.88, yOffset: 0.04 },
+        { count: 11, scale: 1.28, color: 0xf5d4cc, minTilt: 0.32, maxTilt: 1.18, yOffset: 0.0  },
+        { count: 13, scale: 1.52, color: 0xfaf0ec, minTilt: 0.40, maxTilt: 1.44, yOffset: -0.05 }
+      ];
+
+      // Sculpted organic spoon-shaped petal geometry
+      const petalGeo = new THREE.SphereGeometry(0.75, 24, 24);
+      petalGeo.scale(0.62, 1.55, 0.14);
+      petalGeo.translate(0, 0.85, 0);
+
+      ringsConfig.forEach((ring, rIdx) => {
+        const petalMat = new THREE.MeshStandardMaterial({
+          color: ring.color,
+          roughness: 0.38,
+          metalness: 0.06
+        });
+
+        for (let i = 0; i < ring.count; i++) {
+          const angle = (i / ring.count) * Math.PI * 2 + (rIdx * 0.42);
+          const pivot = new THREE.Group();
+          pivot.position.y = ring.yOffset;
+          pivot.rotation.y = angle;
+
+          const petalMesh = new THREE.Mesh(petalGeo, petalMat);
+          petalMesh.scale.setScalar(ring.scale);
+          pivot.add(petalMesh);
+
+          bgFlowerGroup.add(pivot);
+          bgPetalLayers.push({
+            pivot,
+            petalMesh,
+            mat: petalMat,
+            baseColor: new THREE.Color(ring.color),
+            solemnColor: new THREE.Color(0xe5e7eb),
+            minTilt: ring.minTilt,
+            maxTilt: ring.maxTilt,
+            rIdx
+          });
+        }
+      });
+
+      // Floating Golden Pollen Particles in 3D Space
+      const particleCount = 90;
+      const pGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount * 3; i++) {
+        positions[i] = (Math.random() - 0.5) * 14;
+      }
+      pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const pMat = new THREE.PointsMaterial({
+        color: 0xd4af37,
+        size: 0.065,
+        transparent: true,
+        opacity: 0.55
+      });
+      bgParticles = new THREE.Points(pGeo, pMat);
+      bgScene.add(bgParticles);
+
+      window.addEventListener('resize', () => {
+        bgCamera.aspect = window.innerWidth / window.innerHeight;
+        bgCamera.updateProjectionMatrix();
+        bgRenderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animateBgFlowerLoop();
+    }
+
+    function animateBgFlowerLoop() {
+      requestAnimationFrame(animateBgFlowerLoop);
+
+      // Smooth interpolation of scroll ratio
+      smoothScrollRatio += (targetScrollRatio - smoothScrollRatio) * 0.06;
+
+      if (bgFlowerGroup) {
+        // Gentle continuous rotation + scroll-driven spin
+        const time = Date.now() * 0.0004;
+        bgFlowerGroup.rotation.y = time + smoothScrollRatio * Math.PI * 1.35;
+
+        // Subtle camera/flower drift across page sections
+        bgFlowerGroup.position.x = Math.sin(smoothScrollRatio * Math.PI * 2) * 1.15;
+        bgFlowerGroup.position.y = Math.cos(smoothScrollRatio * Math.PI) * 0.35;
+        bgFlowerGroup.rotation.z = Math.sin(time * 2) * 0.08;
+        bgFlowerGroup.rotation.x = 0.35 - smoothScrollRatio * 0.25;
+
+        // Open each ring of petals progressively as user scrolls down
+        bgPetalLayers.forEach(layer => {
+          const targetRotX = layer.minTilt + (layer.maxTilt - layer.minTilt) * smoothScrollRatio;
+          layer.petalMesh.rotation.x = targetRotX;
+
+          // Smooth color transition when entering "Arte Funebre"
+          const targetCol = isFuneralMood ? layer.solemnColor : layer.baseColor;
+          layer.mat.color.lerp(targetCol, 0.04);
+        });
+      }
+
+      if (bgParticles) {
+        bgParticles.rotation.y -= 0.0008;
+        bgParticles.position.y = smoothScrollRatio * 1.2;
+      }
+
+      if (bgRenderer && bgScene && bgCamera) {
+        bgRenderer.render(bgScene, bgCamera);
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       3. ACETERNITY MULTI-LAYER 3D HERO PARALLAX + SCROLL CONTROLLER
+       --------------------------------------------------------------------- */
+    function populateHeroParallax() {
+      const r1 = document.getElementById('parallax-row-1');
+      const r2 = document.getElementById('parallax-row-2');
+      const r3 = document.getElementById('parallax-row-3');
+
+      const cardTemplate = (item) => `
+        <div onclick="addToCart('${item.id}')" class="parallax-card group relative w-72 sm:w-80 h-52 sm:h-60 rounded-3xl overflow-hidden shadow-2xl border-2 border-white/85 cursor-pointer shrink-0 bg-botanical-950">
+          <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent"></div>
+          <span class="absolute top-3.5 left-3.5 bg-white/90 text-botanical-950 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow">${item.badge}</span>
+          <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between text-white">
+            <div>
+              <p class="font-serif text-xl font-semibold leading-tight">${item.name}</p>
+              <p class="text-xs text-petal font-bold mt-0.5">${item.price},00 €</p>
+            </div>
+            <span class="px-3 py-1.5 rounded-full bg-clay text-white text-[11px] font-bold shadow-lg group-hover:bg-white group-hover:text-botanical-950 transition-colors">+ Carrello</span>
+          </div>
+        </div>
+      `;
+
+      const rowA = [...catalogProducts, ...catalogProducts.slice(0, 3)];
+      const rowB = [...catalogProducts.slice().reverse(), ...catalogProducts.slice(1, 4)];
+      const rowC = [...catalogProducts.slice(2), ...catalogProducts.slice(0, 4)];
+
+      r1.innerHTML = rowA.map(cardTemplate).join('');
+      r2.innerHTML = rowB.map(cardTemplate).join('');
+      r3.innerHTML = rowC.map(cardTemplate).join('');
+    }
+
+    function handleGlobalScroll() {
+      const scrollY = window.scrollY;
+      const docHeight = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+      const globalRatio = Math.min(Math.max(scrollY / docHeight, 0), 1);
+
+      // 1. Update 3D Background Flower Bloom Percentage (12% at top -> 100% at bottom)
+      targetScrollRatio = 0.12 + globalRatio * 0.88;
+      const pctLabel = document.getElementById('bloom-pct-text');
+      if (pctLabel) {
+        pctLabel.textContent = `${Math.round(targetScrollRatio * 100)}%`;
+      }
+
+      // Check if user is inside the "Arte Funebre" section to shift 3D flower mood light
+      const funeralSec = document.getElementById('arte-funebre');
+      if (funeralSec) {
+        const rect = funeralSec.getBoundingClientRect();
+        const inFuneral = rect.top < window.innerHeight * 0.65 && rect.bottom > 100;
+        if (inFuneral !== isFuneralMood) {
+          isFuneralMood = inFuneral;
+          const moodTag = document.getElementById('bloom-mood-tag');
+          const dot = document.getElementById('bloom-dot');
+          if (moodTag && dot) {
+            moodTag.textContent = isFuneralMood ? 'Luce Argentea Solenne' : 'Luce Botanica';
+            dot.className = isFuneralMood ? 'w-2.5 h-2.5 rounded-full bg-amber-300 animate-pulse' : 'w-2.5 h-2.5 rounded-full bg-clay animate-pulse';
+          }
+        }
+      }
+
+      // 2. Aceternity 3D Hero Parallax Plane Transformation
+      const heroProgress = Math.min(scrollY / 850, 1);
+      const plane = document.getElementById('hero-3d-plane');
+      const r1 = document.getElementById('parallax-row-1');
+      const r2 = document.getElementById('parallax-row-2');
+      const r3 = document.getElementById('parallax-row-3');
+
+      if (plane && r1 && r2 && r3) {
+        const rotX = 22 - heroProgress * 22;
+        const rotZ = -14 + heroProgress * 14;
+        const transY = -50 + heroProgress * 50;
+        const scale = 0.92 + heroProgress * 0.08;
+
+        plane.style.transform = `rotateX(${rotX.toFixed(2)}deg) rotateZ(${rotZ.toFixed(2)}deg) translateY(${transY.toFixed(1)}px) scale(${scale.toFixed(3)})`;
+
+        const x1 = -260 + scrollY * 0.42;
+        const x2 = -80 - scrollY * 0.42;
+        const x3 = -320 + scrollY * 0.28;
+
+        r1.style.transform = `translate3d(${x1.toFixed(1)}px, 0, 0)`;
+        r2.style.transform = `translate3d(${x2.toFixed(1)}px, 0, 0)`;
+        r3.style.transform = `translate3d(${x3.toFixed(1)}px, 0, 0)`;
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       4. ACETERNITY 3D PERSPECTIVE TILT CARDS (WITH Z-DEPTH POP)
+       --------------------------------------------------------------------- */
+    function renderTiltCards(category = 'all') {
+      const grid = document.getElementById('tilt-cards-grid');
+      const list = category === 'all' ? catalogProducts : catalogProducts.filter(p => p.category === category);
+
+      grid.innerHTML = list.map(item => `
+        <div class="tilt-card-scene blur-fade in-view">
+          <div class="tilt-card-body relative bg-white/95 rounded-[2rem] p-6 border border-stone-200/90 shadow-xl flex flex-col justify-between h-full"
+               onmousemove="tiltCardMove(event, this)"
+               onmouseleave="tiltCardReset(this)">
+            
+            <div class="tilt-glare"></div>
+
+            <div>
+              <!-- Z-Depth 45px: Category Badge -->
+              <div class="flex items-center justify-between mb-3 z-layer-badge">
+                <span class="px-3.5 py-1 rounded-full bg-botanical-950 text-petal text-[11px] font-bold uppercase tracking-wider shadow-md">
+                  ${item.badge}
+                </span>
+                <span class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  ✓ Raggio 10 km
+                </span>
+              </div>
+
+              <!-- Z-Depth 85px on Hover: Floating Vase / Bouquet Cutout Frame -->
+              <div class="relative h-64 rounded-2xl overflow-hidden my-3 z-layer-image bg-stone-100 border-2 border-white">
+                <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover pointer-events-none">
+              </div>
+
+              <!-- Z-Depth 55px: Product Title & Price -->
+              <div class="mt-5 flex items-baseline justify-between z-layer-title">
+                <h3 class="font-serif text-2xl sm:text-3xl text-botanical-950 font-semibold leading-tight">${item.name}</h3>
+                <span class="text-xl font-bold text-clay shrink-0 ml-2">${item.price},00 €</span>
+              </div>
+
+              <!-- Z-Depth 35px: Description -->
+              <p class="text-xs text-stone-600 mt-2 leading-relaxed z-layer-desc">
+                ${item.desc}
+              </p>
+            </div>
+
+            <!-- Z-Depth 70px: Add to Cart Button -->
+            <div class="pt-6 mt-5 border-t border-stone-200/70 z-layer-btn">
+              <button onclick="addToCart('${item.id}')" class="w-full py-3.5 px-5 bg-botanical-950 hover:bg-clay text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2">
+                <span>+ Aggiungi al Carrello</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function tiltCardMove(e, card) {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+
+      const rotX = ((y - cy) / cy) * -15;
+      const rotY = ((x - cx) / cx) * 15;
+
+      card.style.transform = `rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+
+      const glare = card.querySelector('.tilt-glare');
+      if (glare) {
+        const px = (x / rect.width) * 100;
+        const py = (y / rect.height) * 100;
+        glare.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(255,255,255,0.65), transparent 60%)`;
+      }
+    }
+
+    function tiltCardReset(card) {
+      card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+    }
+
+    function filterCatalog(cat) {
+      document.querySelectorAll('.cat-tab').forEach(btn => {
+        if (btn.dataset.cat === cat) {
+          btn.className = 'cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-botanical-950 text-white shadow-md transition-all';
+        } else {
+          btn.className = 'cat-tab px-4 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/90 text-stone-700 border border-stone-300 hover:border-botanical-900 transition-all';
+        }
+      });
+      renderTiltCards(cat);
+    }
+
+    /* ---------------------------------------------------------------------
+       5. APPLE CARDS CAROUSEL PARALLAX & MODAL
+       --------------------------------------------------------------------- */
+    const appleModalData = [
+      {
+        tag: 'Reparto 01 • Fiori Freschi di Giornata',
+        title: 'Bouquet d’Autore & Fiori Recisi',
+        img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=1000&q=80',
+        desc: 'Ogni mattina selezioniamo peonie, ranuncoli, rose inglesi ed eucalipto fresco. Ogni mazzo viaggia con riserva d’acqua agli steli per arrivare impeccabile entro 10 km.'
+      },
+      {
+        tag: 'Reparto 02 • Indoor Jungle & Terracotta',
+        title: 'Piante & Vasi d’Arredo',
+        img: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1000&q=80',
+        desc: 'Monstera Deliciosa, Ficus Lyrata, Strelitzia e Orchidee Phalaenopsis già invasate in terrecotte toscane e ceramiche artigianali.'
+      },
+      {
+        tag: 'Reparto 03 • Cerimonie & Eventi',
+        title: 'Eventi, Lauree & Matrimoni',
+        img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1000&q=80',
+        desc: 'Corone d’alloro intrecciate a mano, scatole Hat-Box di rose vellutate e allestimenti floreali su misura per cerimonie.'
+      },
+      {
+        tag: 'Reparto 04 • Cordoglio e Rispetto',
+        title: 'Arte Funebre & Omaggi di Memoria',
+        img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1000&q=80',
+        desc: 'Cuscini e corone funebri con nastro in raso stampato in oro e consegna prioritaria presso Chiese, Camere Ardenti e Cimiteri entro 10 km.'
+      }
+    ];
+
+    function scrollAppleTrack(dir) {
+      const track = document.getElementById('apple-carousel-track');
+      if (track) track.scrollBy({ left: dir * 410, behavior: 'smooth' });
+    }
+
+    function handleAppleInternalParallax() {
+      const track = document.getElementById('apple-carousel-track');
+      if (!track) return;
+      const cards = track.querySelectorAll('.apple-card-item');
+      const trackRect = track.getBoundingClientRect();
+
+      cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const centerOffset = (rect.left + rect.width / 2 - (trackRect.left + trackRect.width / 2)) / trackRect.width;
+        const img = card.querySelector('.apple-parallax-img');
+        if (img) {
+          img.style.transform = `translateX(${(centerOffset * 28).toFixed(1)}px) scale(1.05)`;
+        }
+      });
+    }
+
+    function openAppleCardModal(idx) {
+      const item = appleModalData[idx];
+      if (!item) return;
+      document.getElementById('apple-modal-img').src = item.img;
+      document.getElementById('apple-modal-tag').textContent = item.tag;
+      document.getElementById('apple-modal-title').textContent = item.title;
+      document.getElementById('apple-modal-desc').textContent = item.desc;
+      const modal = document.getElementById('apple-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAppleCardModal() {
+      const modal = document.getElementById('apple-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /* ---------------------------------------------------------------------
+       6. MAGIC UI CONTINUOUS BLUR-FADE ON SCROLL (ENTERING & LEAVING)
+       --------------------------------------------------------------------- */
+    function initMagicBlurFade() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+          } else {
+            entry.target.classList.remove('in-view');
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+      document.querySelectorAll('.blur-fade').forEach(el => observer.observe(el));
+    }
+
+    /* ---------------------------------------------------------------------
+       7. 10 KM RADAR DISTANCE CHECKER
+       --------------------------------------------------------------------- */
+    function checkCustomAddress() {
+      const val = document.getElementById('radar-input').value.trim();
+      if (!val) {
+        setRadarPoint('Centro Storico (00184)', 3.2, 36, 58);
+        return;
+      }
+      const lower = val.toLowerCase();
+      if (lower.includes('000') || lower.includes('fuori') || lower.includes('15')) {
+        setRadarPoint(val, 14.2, 12, 86);
+      } else if (lower.includes('0014') || lower.includes('eur')) {
+        setRadarPoint(val, 9.5, 76, 68);
+      } else {
+        setRadarPoint(val, 4.1, 30, 64);
+      }
+    }
+
+    function setRadarPoint(label, km, topPct, leftPct) {
+      document.getElementById('radar-input').value = label;
+      const pin = document.getElementById('radar-target-pin');
+      const dot = document.getElementById('radar-target-dot');
+      const pinLabel = document.getElementById('radar-target-label');
+      const banner = document.getElementById('radar-result-banner');
+      const navLabel = document.getElementById('nav-radius-label');
+
+      pin.style.top = `${topPct}%`;
+      pin.style.left = `${leftPct}%`;
+      pinLabel.textContent = `${km.toFixed(1)} km`;
+      banner.classList.remove('hidden');
+
+      if (km <= 10) {
+        dot.className = 'w-4 h-4 rounded-full bg-emerald-400 ring-4 ring-emerald-400/40 animate-bounce';
+        banner.className = 'p-4 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-950 text-sm';
+        banner.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <p class="font-bold text-emerald-900">✓ Consegna Garantita (${km.toFixed(1)} km dalla Bottega)</p>
+              <p class="text-xs text-emerald-700 mt-0.5">Il tuo indirizzo rientra nei 10 km! Consegna espressa oggi stesso con mezzo climatizzato.</p>
+            </div>
+            <span class="px-3 py-1 rounded-full bg-emerald-700 text-white text-xs font-bold shrink-0">Idoneo</span>
+          </div>
+        `;
+        navLabel.textContent = `✓ Zona Coperta (${km.toFixed(1)} km)`;
+        document.getElementById('cart-address').value = `${label} (${km.toFixed(1)} km)`;
+      } else {
+        dot.className = 'w-4 h-4 rounded-full bg-rose-500 ring-4 ring-rose-500/40 animate-bounce';
+        banner.className = 'p-4 rounded-2xl border border-rose-300 bg-rose-50 text-rose-950 text-sm';
+        banner.innerHTML = `
+          <div>
+            <p class="font-bold text-rose-900">✕ Fuori dal Raggio di 10 km (${km.toFixed(1)} km)</p>
+            <p class="text-xs text-rose-700 mt-0.5">Oltre i 10 km non effettuiamo spedizioni per preservare i fiori, ma puoi ordinare con <strong>Ritiro Gratuito in Bottega</strong>!</p>
+          </div>
+        `;
+        navLabel.textContent = `Ritiro in Sede (${km.toFixed(1)} km)`;
+      }
+    }
+
+    /* ---------------------------------------------------------------------
+       8. ARTE FUNEBRE CONFIGURATOR & SILK RIBBON PREVIEW
+       --------------------------------------------------------------------- */
+    let activeFuneralItem = {
+      name: 'Cuscino Floreale "Candore"',
+      price: 95,
+      img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80'
+    };
+
+    function selectFuneralItem(name, price, img) {
+      activeFuneralItem = { name, price, img };
+      document.getElementById('funeral-config-title').textContent = name;
+      document.getElementById('funeral-config-price').textContent = `${price},00 €`;
+      document.getElementById('funeral-config-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    document.getElementById('ribbon-text-input').addEventListener('input', (e) => {
+      document.getElementById('ribbon-live-preview').textContent = e.target.value || 'Sempre nei nostri cuori';
+    });
+
+    function addFuneralTributeToCart() {
+      const ribbon = document.getElementById('ribbon-text-input').value.trim() || 'Condoglianze';
+      const venue = document.getElementById('funeral-venue-type').value;
+      const time = document.getElementById('funeral-ceremony-time').value;
+      const detail = document.getElementById('funeral-venue-detail').value.trim();
+
+      cartState.push({
+        id: 'fun-' + Date.now(),
+        name: activeFuneralItem.name,
+        meta: `Nastro Oro: "${ribbon}" • ${venue} (${time}) ${detail ? '• ' + detail : ''}`,
+        price: activeFuneralItem.price,
+        qty: 1,
+        img: activeFuneralItem.img
+      });
+
+      renderCartDrawer();
+      toggleCartDrawer(true);
+    }
+
+    /* ---------------------------------------------------------------------
+       9. SLIDE-OVER CART DRAWER & HANDWRITTEN CARD PREVIEW
+       --------------------------------------------------------------------- */
+    let cartState = [
+      {
+        id: 'p1',
+        name: 'Bouquet "Alba Provenzale"',
+        meta: 'Confezione idratata in acqua inclusa',
+        price: 48,
+        qty: 1,
+        img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80'
+      }
+    ];
+
+    document.getElementById('greeting-card-input').addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      document.getElementById('greeting-card-preview').textContent = val ? `“${val}”` : '“Nessun messaggio (cartoncino bianco in busta)”';
+    });
+
+    function addToCart(id) {
+      const prod = catalogProducts.find(p => p.id === id);
+      if (!prod) return;
+      const existing = cartState.find(item => item.id === id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cartState.push({
+          id: prod.id,
+          name: prod.name,
+          meta: 'Fiori freschi • Raggio 10 km',
+          price: prod.price,
+          qty: 1,
+          img: prod.img
+        });
+      }
+      renderCartDrawer();
+      toggleCartDrawer(true);
+    }
+
+    function changeQty(id, delta) {
+      const idx = cartState.findIndex(i => i.id === id);
+      if (idx === -1) return;
+      cartState[idx].qty += delta;
+      if (cartState[idx].qty <= 0) cartState.splice(idx, 1);
+      renderCartDrawer();
+    }
+
+    function renderCartDrawer() {
+      const container = document.getElementById('cart-items-container');
+      const badge = document.getElementById('cart-count-badge');
+      const count = cartState.reduce((acc, i) => acc + i.qty, 0);
+      badge.textContent = count;
+
+      if (cartState.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-stone-400 text-xs">Il tuo carrello è vuoto. Aggiungi un bouquet o un vaso 3D!</div>`;
+      } else {
+        container.innerHTML = cartState.map(item => `
+          <div class="flex gap-3.5 bg-white p-3.5 rounded-2xl border border-stone-200 shadow-sm">
+            <img src="${item.img}" alt="${item.name}" class="w-16 h-16 rounded-xl object-cover shrink-0">
+            <div class="flex-1 min-w-0">
+              <h4 class="font-serif text-lg text-botanical-950 font-semibold truncate">${item.name}</h4>
+              <p class="text-[11px] text-stone-500 truncate">${item.meta}</p>
+              <div class="flex items-center justify-between mt-2">
+                <span class="text-xs font-bold text-clay">${item.price * item.qty},00 €</span>
+                <div class="flex items-center gap-2 bg-stone-100 rounded-lg px-2 py-0.5">
+                  <button onclick="changeQty('${item.id}', -1)" class="text-xs font-bold px-1 hover:text-clay">−</button>
+                  <span class="text-xs font-semibold">${item.qty}</span>
+                  <button onclick="changeQty('${item.id}', 1)" class="text-xs font-bold px-1 hover:text-clay">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const subtotal = cartState.reduce((acc, i) => acc + i.price * i.qty, 0);
+      const freeLimit = 50;
+      const shipping = subtotal === 0 ? 0 : (subtotal >= freeLimit ? 0 : 5);
+      const total = subtotal + shipping;
+
+      document.getElementById('cart-subtotal').textContent = `${subtotal.toFixed(2).replace('.', ',')} €`;
+      document.getElementById('cart-shipping').textContent = shipping === 0 && subtotal > 0 ? 'GRATIS (Sopra 50€)' : `${shipping.toFixed(2).replace('.', ',')} €`;
+      document.getElementById('cart-total').textContent = `${total.toFixed(2).replace('.', ',')} €`;
+
+      const pct = Math.min(Math.round((subtotal / freeLimit) * 100), 100);
+      document.getElementById('shipping-bar-fill').style.width = `${pct}%`;
+      document.getElementById('shipping-bar-pct').textContent = `${pct}%`;
+
+      const label = document.getElementById('shipping-bar-label');
+      if (subtotal >= freeLimit) {
+        label.innerHTML = '🎉 <strong>Consegna Gratuita</strong> entro 10 km sbloccata!';
+      } else {
+        const diff = (freeLimit - subtotal).toFixed(2).replace('.', ',');
+        label.textContent = `Aggiungi ${diff} € per la consegna gratuita!`;
+      }
+    }
+
+    function toggleCartDrawer(open) {
+      const drawer = document.getElementById('cart-drawer');
+      const backdrop = document.getElementById('cart-backdrop');
+      if (open) {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+        drawer.classList.remove('translate-x-full');
+      } else {
+        backdrop.classList.add('opacity-0');
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => backdrop.classList.add('hidden'), 300);
+      }
+    }
+
+    function completeMockOrder() {
+      const toast = document.getElementById('order-toast');
+      toast.classList.remove('hidden');
+      toast.textContent = '✓ Ordine ricevuto da Fiori di Peter! Biglietto scritto a mano e consegna entro 10 km confermata.';
+      setTimeout(() => toast.classList.add('hidden'), 4500);
+    }
+
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /* ---------------------------------------------------------------------
+       INITIALIZATION ON WINDOW LOAD
+       --------------------------------------------------------------------- */
+    window.onload = function() {
+      const dateInput = document.getElementById('cart-date');
+      if (dateInput) dateInput.valueAsDate = new Date();
+
+      initFullScreen3DFlower();
+      populateHeroParallax();
+      renderTiltCards('all');
+      renderCartDrawer();
+      initMagicBlurFade();
+
+      window.addEventListener('scroll', handleGlobalScroll, { passive: true });
+      handleGlobalScroll();
+    };
+  </script>
+</body>
+</html>
