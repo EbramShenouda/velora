@@ -44,13 +44,13 @@ Backend REST API per **VELORA - Atelier Botanico**, sviluppato con **Spring Boot
 ### Con Maven:
 ```bash
 cd velora-backend
-export MONGODB_URI="mongodb://localhost:27017/velora"
+export SPRING_DATA_MONGODB_URI="mongodb://localhost:27017/velora"
 mvn spring-boot:run
 ```
 
 ### Con Docker:
 ```bash
 docker build -t velora-backend .
-docker run -p 8080:8080 -e MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/velora" velora-backend
+docker run -p 8080:8080 -e SPRING_DATA_MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/velora" velora-backend
 ```
 
