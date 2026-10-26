@@ -99,8 +99,8 @@ public class AdminProductController {
         if (updates.getFreeShippingThreshold() > 0) {
             current.setFreeShippingThreshold(updates.getFreeShippingThreshold());
         }
-        if (updates.getMaxRadiusKm() > 0) {
-            current.setMaxRadiusKm(updates.getMaxRadiusKm());
+        if (updates.getDeliveryArea() != null) {
+            current.setDeliveryArea(updates.getDeliveryArea());
         }
         current.setUpdatedAt(Instant.now());
 

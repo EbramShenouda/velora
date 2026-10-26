@@ -26,8 +26,6 @@ interface CartContextType {
   deliveryAddress: string;
   customerName: string;
   customerPhone: string;
-  isEligibleForDelivery: boolean;
-  validatedDistanceKm: number | null;
   setIsCartOpen: (open: boolean) => void;
   setGreetingCardText: (text: string) => void;
   setDeliveryDate: (date: string) => void;
@@ -35,7 +33,6 @@ interface CartContextType {
   setDeliveryAddress: (addr: string) => void;
   setCustomerName: (name: string) => void;
   setCustomerPhone: (phone: string) => void;
-  setDeliveryEligibility: (eligible: boolean, distanceKm?: number) => void;
   addToCart: (product: Product, quantity?: number) => void;
   addFuneralTributeToCart: (config: FuneralConfig) => void;
   updateQuantity: (id: string, delta: number) => void;
@@ -47,7 +44,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'velora_cart_items_v1';
+const LOCAL_STORAGE_KEY = 'velora_cart_items_v2';
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -57,7 +54,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Could not read cart from localStorage', e);
     }
-    // Default initial mock item for immediate visual richness matching mockup
     return [
       {
         id: 'p1',
@@ -74,18 +70,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [greetingCardText, setGreetingCardText] = useState<string>(
-    'Tanti auguri di cuore da parte nostra, che questi fiori portino gioia!'
+    'Tanti auguri di cuore, che questi fiori portino gioia e profumo!'
   );
   
-  // Format today's date in YYYY-MM-DD for date input default
+  // Format today's date in YYYY-MM-DD
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const [deliveryDate, setDeliveryDate] = useState<string>(todayStr);
   const [timeSlot, setTimeSlot] = useState<string>('Mattina (09:00 - 12:30)');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('Centro Storico, Roma (2.4 km)');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('Via del Corso 12, Roma');
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
-  const [isEligibleForDelivery, setIsEligibleForDelivery] = useState<boolean>(true);
-  const [validatedDistanceKm, setValidatedDistanceKm] = useState<number | null>(2.4);
 
   // Sync to local storage
   useEffect(() => {
@@ -124,11 +118,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return Math.max(0, freeShippingThreshold - subtotal);
   }, [subtotal, freeShippingThreshold]);
 
-  const setDeliveryEligibility = (eligible: boolean, distanceKm?: number) => {
-    setIsEligibleForDelivery(eligible);
-    if (distanceKm !== undefined) setValidatedDistanceKm(distanceKm);
-  };
-
   const addToCart = (product: Product, quantity = 1) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id && !i.isFuneralTribute);
@@ -141,7 +130,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: `${product.id}-${Date.now()}`,
         productId: product.id,
         name: product.name,
-        meta: `${product.badge} • Consegna refrigerata entro 10 km`,
+        meta: `${product.badge} • Consegna refrigerata a Roma`,
         price: product.price,
         originalPrice: product.originalPrice,
         quantity,
@@ -195,7 +184,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ): OrderPayload => {
     return {
       customer: {
-        fullName: customerName || 'Ospite VELORA',
+        fullName: customerName || 'Cliente VELORA',
         phone: customerPhone,
         deliveryAddress,
         deliveryDate,
@@ -206,7 +195,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subtotal,
       shippingFee,
       total,
-      distanceKm: validatedDistanceKm || 2.4,
       paymentMethod,
     };
   };
@@ -244,8 +232,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deliveryAddress,
         customerName,
         customerPhone,
-        isEligibleForDelivery,
-        validatedDistanceKm,
         setIsCartOpen,
         setGreetingCardText,
         setDeliveryDate,
@@ -253,7 +239,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDeliveryAddress,
         setCustomerName,
         setCustomerPhone,
-        setDeliveryEligibility,
         addToCart,
         addFuneralTributeToCart,
         updateQuantity,
@@ -275,4 +260,3 @@ export const useCart = (): CartContextType => {
   }
   return context;
 };
-

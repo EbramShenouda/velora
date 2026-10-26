@@ -20,12 +20,16 @@ export interface SiteConfig {
     openingDays: string;
   };
   storeLocation: {
-    lat: number;
-    lng: number;
+    mapsQuery: string;
+    /** Opens the store on Google Maps */
     googleMapsUrl: string;
+    /** Starts turn-by-turn navigation to the store (opens the Maps app on Android/iOS) */
+    directionsUrl: string;
+    /** Embeddable map (no API key required) */
+    embedUrl: string;
   };
   delivery: {
-    maxRadiusKm: number;
+    area: string;
     freeShippingThreshold: number;
     standardShippingFee: number;
   };
@@ -41,41 +45,41 @@ const parseEnvNumber = (val: string | undefined, fallback: number): number => {
   return isNaN(parsed) ? fallback : parsed;
 };
 
-const storeLat = parseEnvNumber(import.meta.env.VITE_STORE_LAT, 41.8902);
-const storeLng = parseEnvNumber(import.meta.env.VITE_STORE_LNG, 12.4922);
+const storeAddress = import.meta.env.VITE_STORE_ADDRESS || 'Via Nomentana 38, 00013 Tor Lupara (RM)';
+const mapsQuery =
+  import.meta.env.VITE_STORE_MAPS_QUERY || 'Via Nomentana 38, 00013 Tor Lupara, Fonte Nuova RM';
+const encodedQuery = encodeURIComponent(mapsQuery);
 const whatsappNumber = (import.meta.env.VITE_STORE_WHATSAPP || '+393401234567').replace(/[^0-9]/g, '');
 
 export const siteConfig: SiteConfig = {
   brand: {
     name: import.meta.env.VITE_BRAND_NAME || 'VELORA',
-    tagline: import.meta.env.VITE_BRAND_TAGLINE || 'Atelier Botanico • Raggio 10 KM',
-    subtitle: 'Luxury Floral Design & Consegna Sartoriale di Prossimità',
+    tagline: import.meta.env.VITE_BRAND_TAGLINE || 'Atelier Botanico',
+    subtitle: 'Fiori freschi, piante e composizioni d’autore',
   },
   contact: {
-    address: import.meta.env.VITE_STORE_ADDRESS || 'Via delle Camelie 18, 00184 Roma',
+    address: storeAddress,
     phone: (import.meta.env.VITE_STORE_PHONE || '+39 06 555 8921').replace(/\s+/g, ''),
     phoneDisplay: import.meta.env.VITE_STORE_PHONE || '06 555 8921',
     whatsapp: whatsappNumber,
     whatsappDirectUrl: `https://wa.me/${whatsappNumber}`,
     email: import.meta.env.VITE_STORE_EMAIL || 'atelier@velora-botanico.it',
     operatingHours: '08:30 - 20:00',
-    openingDays: 'Aperto 7 giorni su 7 con consegne in giornata',
+    openingDays: 'Aperto 7 giorni su 7',
   },
   storeLocation: {
-    lat: storeLat,
-    lng: storeLng,
-    googleMapsUrl:
-      import.meta.env.VITE_GOOGLE_MAPS_URL ||
-      `https://www.google.com/maps/search/?api=1&query=${storeLat},${storeLng}`,
+    mapsQuery,
+    googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
+    directionsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodedQuery}&travelmode=driving`,
+    embedUrl: `https://maps.google.com/maps?q=${encodedQuery}&z=16&output=embed`,
   },
   delivery: {
-    maxRadiusKm: parseEnvNumber(import.meta.env.VITE_MAX_DELIVERY_RADIUS_KM, 10.0),
+    area: import.meta.env.VITE_DELIVERY_AREA || 'tutta Roma',
     freeShippingThreshold: parseEnvNumber(import.meta.env.VITE_FREE_SHIPPING_THRESHOLD, 50.0),
     standardShippingFee: parseEnvNumber(import.meta.env.VITE_STANDARD_DELIVERY_FEE, 5.0),
   },
   api: {
-    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
     useMock: import.meta.env.VITE_USE_MOCK_API !== 'false',
   },
 };
-

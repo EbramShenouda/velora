@@ -33,8 +33,8 @@ c:\workspace\velora\
     │   │   ├── BackgroundFlower3D.tsx   # Three.js 3D Flower a pieno schermo con sboccio da scroll (12% -> 100%)
     │   │   ├── HeroParallax3D.tsx       # Aceternity 3D Hero Parallax a 3 tracce con piano inclinato
     │   │   ├── Catalog3DTiltGrid.tsx    # Card prospettiche 3D con profondità Z e riflesso glare cursore
-    │   │   ├── AppleCardsCarousel.tsx   # Carosello stile Apple con parallasse interna e modale estesa
-    │   │   ├── DeliveryRadar10Km.tsx    # Radar geodesico animato con calcolo reale Haversine e Geocoding Nominatim
+    │   │   ├── AppleCardsCarousel.tsx   # Carosello con le quattro collezioni esclusive di VELORA
+    │   │   ├── BoutiqueDeliveryMap.tsx  # Bottega a Tor Lupara & Consegne in tutta Roma con mappa interattiva
     │   │   ├── FuneralConfigurator.tsx  # Configuratore Arte Funebre con nastro oro e luce solenne Three.js
     │   │   └── CartDrawer.tsx           # Carrello laterale con anteprima calligrafica live e checkout WhatsApp
     │   └── admin/
@@ -92,16 +92,17 @@ Tutti i parametri commerciali e logistici sono configurabili all'esterno:
 
 ```env
 VITE_BRAND_NAME="VELORA"
-VITE_BRAND_TAGLINE="Atelier Botanico • Raggio 10 KM"
-VITE_STORE_ADDRESS="Via delle Camelie 18, 00184 Roma"
-VITE_STORE_PHONE="+39 06 555 8921"
+VITE_BRAND_TAGLINE="Atelier Botanico • Fiori & Piante a Tor Lupara e Roma"
+VITE_STORE_ADDRESS="Via Nomentana 38, 00013 Tor Lupara (Fonte Nuova, RM)"
+VITE_STORE_PHONE="+39 06 905 8412"
 VITE_STORE_WHATSAPP="+393401234567"
-VITE_STORE_LAT=41.8902
-VITE_STORE_LNG=12.4922
-VITE_MAX_DELIVERY_RADIUS_KM=10.0
+VITE_STORE_LAT=41.9961
+VITE_STORE_LNG=12.6028
+VITE_DELIVERY_AREA="tutta Roma"
 VITE_FREE_SHIPPING_THRESHOLD=50.0
 VITE_STANDARD_DELIVERY_FEE=5.0
-VITE_GOOGLE_MAPS_URL="https://maps.google.com/?q=41.8902,12.4922"
+VITE_STORE_MAPS_QUERY="Via Nomentana 38 00013 Tor Lupara Fonte Nuova RM"
+VITE_GOOGLE_MAPS_URL="https://www.google.com/maps/dir/?api=1&destination=Via+Nomentana+38+00013+Tor+Lupara+Fonte+Nuova+RM"
 VITE_API_BASE_URL="http://localhost:8080/api/v1"
 VITE_USE_MOCK_API="true"
 ```
@@ -110,17 +111,16 @@ VITE_USE_MOCK_API="true"
 
 ## 📐 Funzionalità Tecniche Chiave
 
-### 1. Fiore 3D Three.js Reattivo allo Scroll (`BackgroundFlower3D.tsx`)
-- Sboccio organico a 4 cerchi concentrici (38 petali curvi sagomati) e filamenti di stami dorati.
+### 1. Rosa Rosa 3D Three.js Reattiva allo Scroll (`BackgroundFlower3D.tsx`)
+- Sboccio organico di una **Rosa Rosa** vellutata a 5 cerchi concentrici (calice esterno, petali intermedi e bocciolo centrale a spirale) con sfumature dal rosa profondo al cipria setoso, stami dorati e particelle di polline fluttuanti.
 - Apertura guidata dal delta scroll dal 12% (in cima alla pagina) fino al 100% (in fondo alla pagina).
-- **Illuminazione solenne**: quando l'utente entra nella sezione *Arte Funebre*, i petali e le luci sfumano gradualmente da toni caldi a riflessi argentei lunari (`0xe2e8f0` e `0xdbeafe`).
-- **Ottimizzazione Mobile (Android/iOS)**: `devicePixelRatio` limitato a 1.25 su smartphone, riduzione dei poligoni e disattivazione dell'antialias su schermi ad alta densità per garantire 60 FPS stabili senza surriscaldamento.
+- **Illuminazione solenne**: quando l'utente entra nella sezione *Arte Funebre*, i petali e le luci sfumano gradualmente da toni rosei a riflessi argentei lunari (`#dbeafe` e `#f1f5f9`).
+- **Ottimizzazione Mobile (Android/iOS)**: `devicePixelRatio` ottimizzato su smartphone, geometrie curve efficienti e frame rate fluido a 60 FPS senza surriscaldamento.
 
-### 2. Calcolo Geodesico Reale a Raggio 10 km (`DeliveryRadar10Km.tsx`)
-- Sostituisce le simulazioni fittizie con il calcolo matematico della **Formula dell'Averseno** (*Haversine Formula*):
-  $$d = 2 R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos\phi_1\cos\phi_2\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
-- Integrazione diretta con le API pubbliche di **OpenStreetMap Nominatim** con fallback predittivo per CAP e vie di Roma/provincia.
-- Posizionamento dinamico 2D sul radar con calcolo dell'azimut (bearing radiale) e anelli concentrici (3 km, 6 km, 10 km).
+### 2. Bottega a Tor Lupara & Consegne in Tutta Roma (`BoutiqueDeliveryMap.tsx`)
+- Finestra interattiva con Google Maps integrata con coordinate e indirizzo esatto: **Via Nomentana 38, 00013 Tor Lupara (Fonte Nuova, RM)**.
+- Pulsante dedicato con avvio istantaneo della navigazione turn-by-turn su Google Maps / Apple Maps.
+- Garanzia di consegna espressa e accurata a domicilio su tutta l'area metropolitana di Roma.
 
 ### 3. Configuratore Nastro Funebre con Stampa in Lamina d'Oro (`FuneralConfigurator.tsx`)
 - Preview reattiva del nastro in raso color crema con caratteri in lamina d'oro (max 45 caratteri).
@@ -128,8 +128,8 @@ VITE_USE_MOCK_API="true"
 
 ### 4. Carrello Avanzato e Checkout WhatsApp (`CartDrawer.tsx`)
 - Barra animata con percentuale dinamica per la **spedizione gratuita sopra i 50,00 €**.
-- Anteprima calligrafica in tempo reale del biglietto su cartoncino avorio.
-- Generatore di ordine diretto via **WhatsApp Business** con riepilogo formattato in markdown con emoji e totali.
+- Anteprima calligrafica in tempo reale del biglietto d'auguri su cartoncino avorio.
+- Generatore di ordine diretto via **WhatsApp Business** con riepilogo formattato in markdown con emoji e totali per consegna in tutta Roma.
 
 ---
 

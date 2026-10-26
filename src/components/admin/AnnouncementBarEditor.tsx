@@ -97,7 +97,7 @@ export const AnnouncementBarEditor: React.FC = () => {
             onClick={() =>
               applyPreset({
                 badge: 'VELORA:',
-                message: 'Consegna espressa a mano garantita entro 10 km dalla nostra bottega',
+                message: 'Consegna espressa a mano garantita in tutta Roma dalla nostra bottega di Tor Lupara',
                 secondary: '✨ Consegna Gratuita sopra 50,00 € • 💌 Biglietto a mano incluso',
                 specialEvent: 'standard',
               })
@@ -146,7 +146,7 @@ export const AnnouncementBarEditor: React.FC = () => {
               applyPreset({
                 badge: '⚡ PROMOZIONE LAMPPO:',
                 message: 'Sconto esclusivo 15% su tutti i vasi e composizioni ordinati per oggi!',
-                secondary: '🔥 Usa il codice BOTANICA15 al checkout • Valido entro 10 km',
+                secondary: '🔥 Usa il codice BOTANICA15 al checkout • Valido in tutta Roma',
                 specialEvent: 'primavera',
               })
             }

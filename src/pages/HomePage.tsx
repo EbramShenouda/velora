@@ -4,7 +4,7 @@ import { Navbar } from '../components/layout/Navbar';
 import { HeroParallax3D } from '../components/home/HeroParallax3D';
 import { Catalog3DTiltGrid } from '../components/home/Catalog3DTiltGrid';
 import { AppleCardsCarousel } from '../components/home/AppleCardsCarousel';
-import { DeliveryRadar10Km } from '../components/home/DeliveryRadar10Km';
+import { BoutiqueDeliveryMap } from '../components/home/BoutiqueDeliveryMap';
 import { FuneralConfigurator } from '../components/home/FuneralConfigurator';
 import { Footer } from '../components/layout/Footer';
 import { CartDrawer } from '../components/home/CartDrawer';
@@ -16,7 +16,7 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateToAdmin }) => {
   return (
     <div className="min-h-screen bg-cream text-stone-800 font-sans antialiased overflow-x-hidden selection:bg-clay selection:text-white relative">
-      {/* 1. Fullscreen Three.js 3D Flower Background */}
+      {/* 1. Fullscreen Three.js 3D Blooming Pink Rose Background */}
       <BackgroundFlower3D />
 
       {/* 2. Top Navigation Bar with Dynamic Announcement */}
@@ -24,23 +24,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToAdmin }) => {
 
       {/* Main Page Sections */}
       <main className="relative z-10">
-        {/* Aceternity 3D Hero Parallax */}
+        {/* Atelier Hero Section */}
         <HeroParallax3D />
 
-        {/* 3D Tilt Cards Catalog */}
+        {/* Creazioni Botaniche Catalog Grid */}
         <Catalog3DTiltGrid />
 
-        {/* Apple Cards Multi-Depth Carousel */}
+        {/* Exclusive Collections Showcase */}
         <AppleCardsCarousel />
 
-        {/* Real Haversine 10 km Delivery Radar */}
-        <DeliveryRadar10Km />
+        {/* Boutique in Via Nomentana 38, Tor Lupara & Delivery across Roma */}
+        <BoutiqueDeliveryMap />
 
         {/* Arte Funebre & Cordoglio Configurator (Triggers Solemn Silver Lighting) */}
         <FuneralConfigurator />
       </main>
 
-      {/* 3. Luxury Botanical Footer */}
+      {/* 3. Luxury Botanical Footer with Interactive Maps Window */}
       <Footer />
 
       {/* 4. Slide-over Shopping Cart Drawer */}
@@ -48,4 +48,3 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToAdmin }) => {
     </div>
   );
 };
-

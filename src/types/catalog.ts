@@ -83,28 +83,13 @@ export interface AnnouncementConfig {
 }
 
 export interface StoreSettings {
-  storeCoordinates: {
-    lat: number;
-    lng: number;
-  };
-  maxRadiusKm: number;
+  storeAddress: string;
+  deliveryArea: string;
   freeShippingThreshold: number;
   standardShippingFee: number;
   operatingHours: string;
   whatsappNumber: string;
   announcement: AnnouncementConfig;
-}
-
-export interface DeliveryValidation {
-  isEligible: boolean;
-  distanceKm: number;
-  normalizedAddress: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-  message: string;
-  status: 'eligible' | 'too_far' | 'not_found' | 'idle';
 }
 
 export interface OrderCustomerInfo {
@@ -125,7 +110,6 @@ export interface OrderPayload {
   subtotal: number;
   shippingFee: number;
   total: number;
-  distanceKm?: number;
   paymentMethod: 'cash_on_delivery' | 'stripe' | 'pos_at_door';
   createdAt?: string;
 }

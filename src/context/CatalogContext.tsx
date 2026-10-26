@@ -36,7 +36,7 @@ const LOCAL_PRODUCTS_KEY = 'velora_custom_products_v1';
 const LOCAL_ANNOUNCEMENT_KEY = 'velora_announcement_v1';
 
 const DEFAULT_ANNOUNCEMENT: AnnouncementConfig = {
-  message: `Consegna espressa a mano garantita entro ${siteConfig.delivery.maxRadiusKm} km dalla nostra bottega`,
+  message: 'Consegna espressa a mano garantita in tutta Roma dalla nostra bottega',
   badge: `${siteConfig.brand.name}:`,
   secondaryNotice: `✨ Consegna Gratuita sopra ${siteConfig.delivery.freeShippingThreshold.toFixed(2)} € • 💌 Biglietto a mano incluso`,
   active: true,

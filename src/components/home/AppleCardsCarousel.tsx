@@ -10,7 +10,7 @@ const APPLE_COLLECTIONS: AppleCardCollection[] = [
     title: 'Bouquet d\'Autore & Fiori Recisi',
     subtitle: 'Peonie, ranuncoli, rose David Austin ed eucalipto',
     img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=1000&q=80',
-    desc: 'Ogni mattina all\'alba Peter seleziona le migliori varietà botaniche dai mercati di Sanremo e dell\'Olanda. I mazzi sono legati rigorosamente a mano con fusto idratato per preservare il profumo fino al momento della consegna.',
+    desc: 'Ogni mattina all\'alba il nostro mastro fiorista seleziona le migliori varietà botaniche dai mercati floreali di Sanremo e internazionali. I mazzi sono legati rigorosamente a mano con fusto idratato per preservare il profumo fino al momento della consegna.',
     highlights: [
       'Garantiti freschi per 7+ giorni',
       'Fialetta d\'acqua inclusa sul gambo',
@@ -103,13 +103,13 @@ export const AppleCardsCarousel: React.FC = () => {
           <div>
             <span className="text-xs uppercase tracking-[0.3em] text-petal font-bold flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-gold" />
-              Apple Cards Carousel • Multi-Depth Scroll
+              Collezioni Esclusive
             </span>
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white mt-2 font-semibold">
               Le Quattro Anime di {siteConfig.brand.name}.
             </h2>
             <p className="text-stone-300 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
-              Scorri orizzontalmente le collezioni editoriali: la fotografia interna trasla su piani differenti con parallasse ad alta precisione. Clicca una scheda per approfondire.
+              Esplora i nostri quattro reparti botanici: bouquet freschi di giornata, piante in terracotta, cerimonie sartoriali e omaggi di cordoglio.
             </p>
           </div>
 
@@ -233,7 +233,7 @@ export const AppleCardsCarousel: React.FC = () => {
               <div className="p-4 sm:p-5 rounded-2xl bg-botanical-50 border border-botanical-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold text-botanical-900 uppercase tracking-wider">
-                    Consegna a Mano Entro {siteConfig.delivery.maxRadiusKm} km
+                    Consegna Espressa a Mano in Tutta Roma
                   </p>
                   <p className="text-xs text-stone-600 mt-0.5">
                     Preparato con cura botanica e biglietto calligrafico in omaggio.
@@ -244,7 +244,7 @@ export const AppleCardsCarousel: React.FC = () => {
                   onClick={scrollToCatalog}
                   className="px-6 py-3 bg-botanical-950 hover:bg-clay text-white rounded-full text-xs font-bold uppercase tracking-wider transition-colors shadow-lg flex items-center gap-2 shrink-0"
                 >
-                  <span>Scegli dal Catalogo 3D</span>
+                  <span>Scegli dal Catalogo</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

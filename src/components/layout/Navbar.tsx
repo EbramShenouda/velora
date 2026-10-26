@@ -3,7 +3,7 @@ import { BrandLogo } from './BrandLogo';
 import { siteConfig } from '../../config/siteConfig';
 import { useCart } from '../../context/CartContext';
 import { useCatalog } from '../../context/CatalogContext';
-import { ShoppingBag, MapPin, Menu, X, Sparkles, Lock } from 'lucide-react';
+import { ShoppingBag, MapPin, Menu, X, Lock, Navigation } from 'lucide-react';
 
 interface NavbarProps {
   onOpenRadar?: () => void;
@@ -11,7 +11,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
-  const { itemCount, setIsCartOpen, validatedDistanceKm, isEligibleForDelivery } = useCart();
+  const { itemCount, setIsCartOpen } = useCart();
   const { announcement } = useCatalog();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,10 +49,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
               <span>{announcement.secondaryNotice}</span>
               <span>•</span>
               <button
-                onClick={() => scrollTo('radar-10km')}
-                className="text-petal underline hover:text-white font-semibold transition-colors"
+                onClick={() => scrollTo('bottega-mappa')}
+                className="text-petal underline hover:text-white font-semibold transition-colors flex items-center gap-1"
               >
-                Controlla il tuo CAP →
+                <span>Vieni in bottega →</span>
               </button>
             </div>
           </div>
@@ -86,25 +86,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
               onClick={() => scrollTo('hero-parallax')}
               className="hover:text-clay transition-colors uppercase tracking-wider"
             >
-              Parallax 3D
+              Atelier
             </button>
             <button
               onClick={() => scrollTo('catalogo-3d')}
               className="hover:text-clay transition-colors uppercase tracking-wider"
             >
-              Card 3D
+              Creazioni
             </button>
             <button
               onClick={() => scrollTo('apple-carousel-sec')}
               className="hover:text-clay transition-colors uppercase tracking-wider"
             >
-              Apple Carousel
+              Collezioni
             </button>
             <button
-              onClick={() => scrollTo('radar-10km')}
-              className="hover:text-clay transition-colors uppercase tracking-wider"
+              onClick={() => scrollTo('bottega-mappa')}
+              className="hover:text-clay transition-colors uppercase tracking-wider flex items-center gap-1"
             >
-              Raggio 10 km
+              <span>Bottega & Consegne</span>
             </button>
             <button
               onClick={() => scrollTo('arte-funebre')}
@@ -119,21 +119,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
             <BrandLogo size="md" variant="dark" />
           </div>
 
-          {/* Right Actions: 10km Radius Status Pill + Cart Trigger */}
+          {/* Right Actions: Store Address Pill + Admin + Cart Trigger */}
           <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Delivery Radar Pill */}
+            {/* Quick Navigation to Boutique Pill */}
             <button
-              onClick={() => scrollTo('radar-10km')}
+              onClick={() => scrollTo('bottega-mappa')}
               className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-full bg-white/90 border border-stone-300 text-botanical-900 hover:bg-botanical-900 hover:text-white transition-all shadow-sm group"
+              title="Vedi Bottega e indicazioni a Tor Lupara"
             >
               <MapPin className="w-3.5 h-3.5 text-clay group-hover:text-petal transition-colors" />
-              <span>
-                {validatedDistanceKm !== null
-                  ? isEligibleForDelivery
-                    ? `✓ Coperto (${validatedDistanceKm} km)`
-                    : `Ritiro Sede (${validatedDistanceKm} km)`
-                  : 'Verifica 10 km'}
-              </span>
+              <span>Tor Lupara • Tutta Roma</span>
             </button>
 
             {/* Admin Dashboard Access */}
@@ -176,27 +171,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
                 onClick={() => scrollTo('hero-parallax')}
                 className="text-left py-2 border-b border-stone-200 hover:text-clay"
               >
-                Parallax 3D
+                Atelier Botanico
               </button>
               <button
                 onClick={() => scrollTo('catalogo-3d')}
                 className="text-left py-2 border-b border-stone-200 hover:text-clay"
               >
-                Card Prospettiche 3D
+                Creazioni & Bouquet
               </button>
               <button
                 onClick={() => scrollTo('apple-carousel-sec')}
                 className="text-left py-2 border-b border-stone-200 hover:text-clay"
               >
-                Apple Cards Carousel
+                Le Nostre Collezioni
               </button>
               <button
-                onClick={() => scrollTo('radar-10km')}
+                onClick={() => scrollTo('bottega-mappa')}
                 className="text-left py-2 border-b border-stone-200 hover:text-clay flex items-center justify-between"
               >
-                <span>Radar Raggio 10 km</span>
+                <span>Bottega & Consegne a Roma</span>
                 <span className="text-[10px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-full">
-                  GPS Live
+                  Tor Lupara
                 </span>
               </button>
               <button
@@ -224,10 +219,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
               </button>
               <div className="pt-2 flex flex-col gap-2">
                 <a
-                  href={`tel:${siteConfig.contact.phone}`}
-                  className="text-center py-3 bg-botanical-950 text-white rounded-xl text-xs uppercase tracking-widest font-bold"
+                  href={siteConfig.storeLocation.directionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-center py-3 bg-botanical-950 text-white rounded-xl text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2"
                 >
-                  Chiama Atelier ({siteConfig.contact.phoneDisplay})
+                  <Navigation className="w-3.5 h-3.5 text-petal" />
+                  <span>Naviga a Via Nomentana 38</span>
                 </a>
               </div>
             </nav>
@@ -237,4 +235,3 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
     </>
   );
 };
-

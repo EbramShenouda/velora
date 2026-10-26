@@ -99,9 +99,9 @@ export const FuneralConfigurator: React.FC = () => {
           </h2>
 
           <p className="text-stone-300 text-sm sm:text-base mt-3 leading-relaxed">
-            In questa sezione anche il fiore 3D sullo sfondo assume una luce argentea e raccolta. Personalizza il{' '}
+            In questa sezione anche la rosa 3D sullo sfondo assume una luce argentea e raccolta. Personalizza il{' '}
             <strong className="text-amber-300">Nastro di Cordoglio in raso con stampa a caldo in lamina d'oro</strong>{' '}
-            e indica il luogo della cerimonia entro {siteConfig.delivery.maxRadiusKm} km.
+            e indica il luogo della cerimonia a Roma o provincia.
           </p>
         </div>
 
@@ -251,7 +251,7 @@ export const FuneralConfigurator: React.FC = () => {
             {/* Venue Specific Details */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-stone-300 mb-1.5">
-                Nome Defunto / Dettagli Chiesa (entro {siteConfig.delivery.maxRadiusKm} km)
+                Nome Defunto / Indicazioni Chiesa / Cimitero
               </label>
               <input
                 type="text"

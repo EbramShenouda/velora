@@ -26,13 +26,13 @@ export const Catalog3DTiltGrid: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-12 sm:mb-14 gap-6">
           <div>
             <span className="text-xs uppercase tracking-[0.28em] text-clay font-bold">
-              Aceternity 3D Perspective Cards
+              Creazioni Botaniche d'Autore
             </span>
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-botanical-950 mt-1 font-semibold">
-              Vasi e Bouquet in Prospettiva 3D.
+              Bouquet, Piante e Composizioni.
             </h2>
             <p className="text-stone-600 text-sm sm:text-base mt-2 max-w-2xl leading-relaxed">
-              Passa il cursore sulle card: il vaso o il mazzo si solleva nello spazio tridimensionale con riflesso di luce speculare dinamico, mentre sullo sfondo il fiore 3D continua a fiorire.
+              Ogni creazione viene confezionata a mano dai nostri mastri fioristi con fiori recisi freschissimi di giornata e recapitata con riserva d'acqua in tutta Roma.
             </p>
           </div>
 
@@ -153,7 +153,7 @@ const TiltCard: React.FC<TiltCardProps> = ({ product, onAddToCart }) => {
               </span>
             ) : (
               <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Raggio {siteConfig.delivery.maxRadiusKm} km
+                <CheckCircle className="w-3 h-3" /> Consegna a Roma
               </span>
             )}
           </div>

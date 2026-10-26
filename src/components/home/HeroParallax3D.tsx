@@ -127,16 +127,16 @@ export const HeroParallax3D: React.FC = () => {
 
         <div className="max-w-3xl bg-cream/80 backdrop-blur-xl p-6 sm:p-10 rounded-[2.5rem] border border-white/90 shadow-2xl pointer-events-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-botanical-950 text-petal text-xs font-semibold mb-5">
-            <span className="w-2 h-2 rounded-full bg-clay animate-ping" />
-            <span>Scorri la pagina: il fiore 3D sullo sfondo sboccia in tempo reale</span>
+            <span className="w-2 h-2 rounded-full bg-pink-400 animate-ping" />
+            <span>Atelier Botanico • Fiori freschi d'autore con consegna espressa a Roma</span>
           </div>
 
           <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl leading-[1.0] text-botanical-950 font-semibold tracking-tight">
-            L'arte dei fiori che <span className="italic font-normal text-clay">prende vita</span> mentre scorri.
+            L'arte dei fiori che <span className="italic font-normal text-clay">prende vita</span>.
           </h1>
 
           <p className="mt-5 text-stone-700 text-sm sm:text-base lg:text-lg leading-relaxed">
-            Benvenuti nell'atelier botanico digitale di <strong>{siteConfig.brand.name}</strong>. Mazzi sartoriali freschi di giornata, piante rare invasate in terracotta e omaggi solenni, recapitati esclusivamente a mano entro <strong>{siteConfig.delivery.maxRadiusKm} km</strong> dalla nostra bottega.
+            Benvenuti nell'atelier botanico di <strong>{siteConfig.brand.name}</strong> a Tor Lupara. Mazzi sartoriali freschi di giornata, piante d'arredo in terracotta e composizioni di prestigio, recapitati con cura e idratazione garantita in <strong>tutta Roma</strong>.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3.5">
@@ -144,14 +144,14 @@ export const HeroParallax3D: React.FC = () => {
               onClick={() => scrollTo('catalogo-3d')}
               className="px-7 py-4 bg-botanical-950 hover:bg-clay text-white rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-xl hover:scale-105 flex items-center gap-2"
             >
-              <span>Esplora le Card 3D</span>
+              <span>Esplora le Creazioni</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => scrollTo('apple-carousel-sec')}
               className="px-6 py-4 bg-white/90 hover:bg-white text-botanical-950 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider border border-stone-300 transition-all shadow-sm"
             >
-              Apple Cards Carousel
+              Le Collezioni
             </button>
           </div>
         </div>

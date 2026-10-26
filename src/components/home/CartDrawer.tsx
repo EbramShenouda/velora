@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { siteConfig } from '../../config/siteConfig';
-import { X, Plus, Minus, Trash2, Calendar, Clock, MapPin, Sparkles, MessageCircle, CheckCircle, ShieldCheck } from 'lucide-react';
+import { X, Plus, Minus, Trash2, Calendar, MapPin, Sparkles, MessageCircle, ShieldCheck } from 'lucide-react';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -28,8 +28,6 @@ export const CartDrawer: React.FC = () => {
     setCustomerName,
     customerPhone,
     setCustomerPhone,
-    isEligibleForDelivery,
-    validatedDistanceKm,
     updateQuantity,
     removeFromCart,
     submitOrder,
@@ -76,7 +74,7 @@ export const CartDrawer: React.FC = () => {
                   Il Tuo Carrello
                 </h3>
                 <p className="text-xs text-stone-500 mt-1">
-                  Consegna espressa nel raggio di {siteConfig.delivery.maxRadiusKm} km
+                  Consegna espressa a domicilio in tutta Roma
                 </p>
               </div>
 
@@ -218,7 +216,7 @@ export const CartDrawer: React.FC = () => {
             <div className="bg-white p-4 rounded-2xl border border-stone-200 space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-botanical-900 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-clay" />
-                <span>Data e Fascia Oraria (Entro {siteConfig.delivery.maxRadiusKm} km)</span>
+                <span>Data e Fascia Oraria di Consegna</span>
               </p>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -236,28 +234,24 @@ export const CartDrawer: React.FC = () => {
                   <option>Mattina (09:00 - 12:30)</option>
                   <option>Pomeriggio (14:30 - 18:00)</option>
                   <option>Sera (18:00 - 20:00)</option>
-                  <option>Ritiro in Bottega (Gratis)</option>
+                  <option>Ritiro in Bottega a Tor Lupara (Gratis)</option>
                 </select>
               </div>
 
-              {/* Delivery Address & Status */}
+              {/* Delivery Address in Roma */}
               <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold uppercase text-stone-600">
+                  Indirizzo di Consegna (Tutta Roma e Provincia)
+                </label>
                 <div className="relative">
                   <MapPin className="w-3.5 h-3.5 text-clay absolute left-3 top-3" />
                   <input
                     type="text"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="Indirizzo destinatario (es. Via del Corso 12)"
+                    placeholder="Es. Via del Corso 12, Roma oppure Via Nomentana..."
                     className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-stone-200 text-xs bg-cream focus:outline-none focus:ring-1 focus:ring-botanical-900"
                   />
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] px-1 text-stone-500">
-                  <span>Distanza calcolata:</span>
-                  <span className={`font-semibold ${isEligibleForDelivery ? 'text-emerald-700' : 'text-rose-600'}`}>
-                    {validatedDistanceKm !== null ? `${validatedDistanceKm} km` : 'In attesa verifica'}
-                  </span>
                 </div>
               </div>
 
@@ -291,7 +285,7 @@ export const CartDrawer: React.FC = () => {
                 <span className="font-semibold text-stone-900">{subtotal.toFixed(2)} €</span>
               </div>
               <div className="flex justify-between">
-                <span>Consegna Refrigerata ({siteConfig.delivery.maxRadiusKm} km)</span>
+                <span>Consegna a Domicilio a Roma</span>
                 <span className="font-semibold text-stone-900">
                   {shippingFee === 0 && subtotal > 0 ? (
                     <span className="text-emerald-700 font-bold">GRATIS</span>
@@ -342,4 +336,3 @@ export const CartDrawer: React.FC = () => {
     </div>
   );
 };
-

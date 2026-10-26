@@ -11,10 +11,9 @@ public class StoreSettings {
     @Id
     private String id = "store_config";
     private String brandName = "VELORA";
-    private String brandTagline = "Atelier Botanico • Raggio 10 KM";
-    private double storeLat = 41.8902;
-    private double storeLng = 12.4922;
-    private double maxRadiusKm = 10.0;
+    private String brandTagline = "Atelier Botanico";
+    private String storeAddress = "Via Nomentana 38, 00013 Tor Lupara (RM)";
+    private String deliveryArea = "tutta Roma";
     private double freeShippingThreshold = 50.0;
     private double standardDeliveryFee = 5.0;
 
@@ -25,7 +24,7 @@ public class StoreSettings {
 
     public static class Announcement {
         private String badge = "VELORA:";
-        private String message = "Consegna espressa a mano garantita entro 10 km dalla nostra bottega";
+        private String message = "Consegna espressa a mano garantita in tutta Roma dalla nostra bottega di Tor Lupara";
         private String secondaryNotice = "✨ Consegna Gratuita sopra 50,00 € • 💌 Biglietto a mano incluso";
         private boolean active = true;
         private String specialEvent = "standard";
@@ -59,14 +58,11 @@ public class StoreSettings {
     public String getBrandTagline() { return brandTagline; }
     public void setBrandTagline(String brandTagline) { this.brandTagline = brandTagline; }
 
-    public double getStoreLat() { return storeLat; }
-    public void setStoreLat(double storeLat) { this.storeLat = storeLat; }
+    public String getStoreAddress() { return storeAddress; }
+    public void setStoreAddress(String storeAddress) { this.storeAddress = storeAddress; }
 
-    public double getStoreLng() { return storeLng; }
-    public void setStoreLng(double storeLng) { this.storeLng = storeLng; }
-
-    public double getMaxRadiusKm() { return maxRadiusKm; }
-    public void setMaxRadiusKm(double maxRadiusKm) { this.maxRadiusKm = maxRadiusKm; }
+    public String getDeliveryArea() { return deliveryArea; }
+    public void setDeliveryArea(String deliveryArea) { this.deliveryArea = deliveryArea; }
 
     public double getFreeShippingThreshold() { return freeShippingThreshold; }
     public void setFreeShippingThreshold(double freeShippingThreshold) { this.freeShippingThreshold = freeShippingThreshold; }
