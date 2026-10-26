@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Custom Luxury Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FAF7F2;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #163022;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C86D5B;
+  }
+}
+
+/* Glass veils for sections over 3D flower */
+.section-glass-light {
+  background: rgba(250, 247, 242, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.section-glass-dark {
+  background: rgba(7, 17, 12, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.section-glass-funeral {
+  background: rgba(24, 26, 30, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* 3D Tilt perspective */
+.tilt-card-scene {
+  perspective: 1100px;
+}
+
+.tilt-card-body {
+  transform-style: preserve-3d;
+  transition: transform 0.15s cubic-bezier(0.03, 0.98, 0.52, 0.99), box-shadow 0.35s ease;
+  will-change: transform;
+}
+
+.tilt-card-body:hover {
+  box-shadow: 0 35px 70px -15px rgba(13, 30, 21, 0.32);
+}
+
+/* Z-Depth layers */
+.z-layer-badge {
+  transform: translateZ(45px);
+  transform-style: preserve-3d;
+}
+
+.z-layer-image {
+  transform: translateZ(20px);
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+}
+
+.tilt-card-body:hover .z-layer-image {
+  transform: translateZ(75px) scale(1.05);
+  box-shadow: 0 28px 50px -12px rgba(13, 30, 21, 0.45);
+}
+
+.z-layer-title {
+  transform: translateZ(55px);
+  transform-style: preserve-3d;
+}
+
+.z-layer-desc {
+  transform: translateZ(35px);
+  transform-style: preserve-3d;
+}
+
+.z-layer-btn {
+  transform: translateZ(65px);
+  transform-style: preserve-3d;
+}
+
+/* Cursor Glare */
+.tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: 2rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  mix-blend-mode: overlay;
+  z-index: 25;
+}
+
+.tilt-card-body:hover .tilt-glare {
+  opacity: 1;
+}
+
+/* Apple carousel */
+.apple-carousel-track {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.apple-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+.apple-card-item {
+  scroll-snap-align: start;
+}
+
+/* Radar beam */
+.radar-beam {
+  background: conic-gradient(from 0deg, rgba(52, 211, 153, 0.45) 0deg, rgba(52, 211, 153, 0.08) 65deg, transparent 90deg);
+  animation: radarSweep 4s linear infinite;
+}
+
+.radar-pulse-ring {
+  animation: radarRingPulse 3.2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Calligraphic handwriting font */
+.font-handwriting {
+  font-family: 'Alex Brush', cursive, 'Cormorant Garamond', Georgia, serif;
+}
+

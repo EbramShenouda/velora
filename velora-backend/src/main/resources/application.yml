@@ -1,0 +1,33 @@
+server:
+  port: ${PORT:8080}
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
+spring:
+  application:
+    name: velora-backend
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/velora}
+      auto-index-creation: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+# JWT and Security Settings
+velora:
+  jwt:
+    # 256-bit base64 secret key
+    secret: ${JWT_SECRET:vElOrABoTaNiCaL2026sEcReTkEySuPeRsEcUrE9876543210}
+    expiration-ms: 86400000 # 24 hours
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
+
+logging:
+  level:
+    root: INFO
+    com.velora: DEBUG
+    org.springframework.security: INFO
+
