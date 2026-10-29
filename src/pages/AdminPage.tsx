@@ -6,6 +6,7 @@ import { BrandLogo } from '../components/layout/BrandLogo';
 import { ProductFormModal } from '../components/admin/ProductFormModal';
 import { AnnouncementBarEditor } from '../components/admin/AnnouncementBarEditor';
 import { Product, CategoryId } from '../types/catalog';
+import { getOptimizedImageUrl } from '../services/cloudinaryService';
 import {
   Lock,
   LogOut,
@@ -513,7 +514,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
                               <img
-                                src={p.img}
+                                src={getOptimizedImageUrl(p.imageUrl || p.img, 150)}
                                 alt={p.name}
                                 className="w-12 h-12 rounded-xl object-cover shrink-0 border border-stone-200"
                               />
@@ -628,7 +629,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                     <div key={p.id} className="p-4 space-y-3">
                       <div className="flex gap-3">
                         <img
-                          src={p.img}
+                          src={getOptimizedImageUrl(p.imageUrl || p.img, 200)}
                           alt={p.name}
                           className="w-20 h-20 rounded-xl object-cover shrink-0 border border-stone-200"
                         />

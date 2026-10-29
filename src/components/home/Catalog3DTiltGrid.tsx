@@ -3,6 +3,7 @@ import { useCatalog } from '../../context/CatalogContext';
 import { useCart } from '../../context/CartContext';
 import { CategoryId, Product } from '../../types/catalog';
 import { siteConfig } from '../../config/siteConfig';
+import { getOptimizedImageUrl } from '../../services/cloudinaryService';
 import { Flame, CheckCircle, AlertCircle, ShoppingBag } from 'lucide-react';
 
 export const Catalog3DTiltGrid: React.FC = () => {
@@ -161,7 +162,7 @@ const TiltCard: React.FC<TiltCardProps> = ({ product, onAddToCart }) => {
           {/* Z-Layer Image Floating (20px normal, 75px on hover) */}
           <div className="relative h-64 rounded-2xl overflow-hidden my-3 z-layer-image bg-stone-100 border-2 border-white shadow-inner">
             <img
-              src={product.img}
+              src={getOptimizedImageUrl(product.imageUrl || product.img, 700)}
               alt={product.name}
               className={`w-full h-full object-cover pointer-events-none transition-transform duration-700 ${
                 isOutOfStock ? 'grayscale opacity-60' : 'hover:scale-105'

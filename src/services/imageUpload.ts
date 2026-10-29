@@ -1,4 +1,5 @@
 import { siteConfig } from '../config/siteConfig';
+import { uploadToCloudinary } from './cloudinaryService';
 
 export interface UploadResult {
   url: string;
@@ -7,7 +8,7 @@ export interface UploadResult {
 
 /**
  * Service to handle image uploads from camera, drag-and-drop, or external URL.
- * Supports direct Cloudinary upload if configured, fallback to backend or base64.
+ * Supports direct Cloudinary upload via cloudinaryService, fallback to backend or base64.
  */
 export const ImageUploadService = {
   /**
@@ -17,25 +18,12 @@ export const ImageUploadService = {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-    // 1. Direct Cloudinary unsigned upload if credentials are provided in .env
+    // 1. Direct Cloudinary unsigned upload using cloudinaryService
     if (cloudName && uploadPreset) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', uploadPreset);
-        formData.append('folder', 'velora_products');
-
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          return data.secure_url;
-        }
+        return await uploadToCloudinary(file);
       } catch (err) {
-        console.warn('Cloudinary upload failed, falling back to local data URL:', err);
+        console.warn('Cloudinary upload via cloudinaryService failed, falling back:', err);
       }
     }
 

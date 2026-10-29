@@ -115,10 +115,13 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // CRUD Functions
   const addProduct = async (newProdData: Omit<Product, 'id'>): Promise<Product> => {
     const id = `p-${Date.now()}`;
+    const finalImg = newProdData.imageUrl || newProdData.img || '';
     const product: Product = {
       ...newProdData,
       id,
       slug: newProdData.slug || newProdData.name.toLowerCase().replace(/\s+/g, '-'),
+      img: finalImg,
+      imageUrl: finalImg,
     };
 
     // If backend is active, send to Spring Boot endpoint
@@ -144,11 +147,16 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {
     let updatedProduct: Product | undefined;
+    const finalImg = updates.imageUrl !== undefined ? updates.imageUrl : (updates.img !== undefined ? updates.img : undefined);
 
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id === id) {
-          updatedProduct = { ...p, ...updates };
+          updatedProduct = {
+            ...p,
+            ...updates,
+            ...(finalImg !== undefined ? { img: finalImg, imageUrl: finalImg } : {}),
+          };
           return updatedProduct;
         }
         return p;

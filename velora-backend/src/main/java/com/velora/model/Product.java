@@ -90,6 +90,13 @@ public class Product {
     public String getImg() { return img; }
     public void setImg(String img) { this.img = img; }
 
+    public String getImageUrl() { return img; }
+    public void setImageUrl(String imageUrl) {
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            this.img = imageUrl;
+        }
+    }
+
     public boolean isFeatured() { return isFeatured; }
     public void setFeatured(boolean featured) { isFeatured = featured; }
 

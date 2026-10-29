@@ -61,7 +61,10 @@ public class AdminProductController {
                     existing.setBadge(updates.getBadge());
                     existing.setDesc(updates.getDesc());
                     existing.setDimensions(updates.getDimensions());
-                    existing.setImg(updates.getImg());
+                    String newImg = updates.getImageUrl() != null && !updates.getImageUrl().isBlank() 
+                            ? updates.getImageUrl() 
+                            : updates.getImg();
+                    existing.setImg(newImg);
                     existing.setUpdatedAt(Instant.now());
 
                     Product saved = productRepository.save(existing);

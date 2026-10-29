@@ -25,6 +25,7 @@ export interface Product {
   desc: string;
   longDesc?: string;
   img: string;
+  imageUrl?: string;
   gallery?: string[];
   features?: string[];
   dimensions?: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../../types/catalog';
-import { ImageUploadDropzone } from './ImageUploadDropzone';
+import { ImageUploader } from './ImageUploader';
 import { X, Flame, Check, AlertCircle, Trash2, Sparkles, Tag, DollarSign, Package } from 'lucide-react';
 
 interface ProductFormModalProps {
@@ -46,7 +46,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setBadge(productToEdit.badge);
       setDesc(productToEdit.desc);
       setDimensions(productToEdit.dimensions || '');
-      setImg(productToEdit.img);
+      setImg(productToEdit.imageUrl || productToEdit.img || '');
       setIsPromo(!!productToEdit.isPromo);
       setDiscountedPrice(productToEdit.price);
       setDiscountPct(productToEdit.promoDiscountPct || 15);
@@ -113,6 +113,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         desc: desc.trim(),
         dimensions: dimensions.trim(),
         img,
+        imageUrl: img,
         isPromo,
         promoDiscountPct: isPromo ? discountPct : undefined,
       });
@@ -374,12 +375,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             )}
           </div>
 
-          {/* 4. Gestione Immagini con Upload / Camera / URL */}
+          {/* 4. Gestione Immagini con Cloudinary Upload / Fotocamera / Dropzone */}
           <div className="space-y-2">
-            <label className="block font-bold uppercase tracking-wider text-stone-700">
-              Fotografia del Fiore o Vaso *
-            </label>
-            <ImageUploadDropzone value={img} onChange={(url) => setImg(url)} />
+            <ImageUploader
+              currentImageUrl={img}
+              onImageUploaded={(uploadedUrl) => setImg(uploadedUrl)}
+              onImageRemoved={() => setImg('')}
+              label="Fotografia della Creazione Floreale o Pianta *"
+              helperText="Carica una foto da smartphone/PC o trascinala qui. L'immagine verrà inviata direttamente a Cloudinary con ottimizzazione automatica WebP/AVIF."
+            />
           </div>
 
           {/* 5. Descrizione e Dimensioni */}
