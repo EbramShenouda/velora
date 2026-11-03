@@ -31,6 +31,7 @@ export interface SiteConfig {
   delivery: {
     area: string;
     freeShippingThreshold: number;
+    freeShippingEnabled: boolean;
     standardShippingFee: number;
   };
   api: {
@@ -76,6 +77,7 @@ export const siteConfig: SiteConfig = {
   delivery: {
     area: import.meta.env.VITE_DELIVERY_AREA || 'tutta Roma',
     freeShippingThreshold: parseEnvNumber(import.meta.env.VITE_FREE_SHIPPING_THRESHOLD, 50.0),
+    freeShippingEnabled: import.meta.env.VITE_FREE_SHIPPING_ENABLED === 'true',
     standardShippingFee: parseEnvNumber(import.meta.env.VITE_STANDARD_DELIVERY_FEE, 5.0),
   },
   api: {

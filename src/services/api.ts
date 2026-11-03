@@ -4,7 +4,7 @@
  */
 
 import { siteConfig } from '../config/siteConfig';
-import { Product, PromoOffer, OrderPayload } from '../types/catalog';
+import { Product, PromoOffer, OrderPayload, CustomerOrder, StoreSettings } from '../types/catalog';
 
 // Initial Catalog Database populated with high-end botanical products
 export const INITIAL_PRODUCTS: Product[] = [
@@ -210,33 +210,154 @@ export const CatalogApi = {
   },
 
   /**
-   * Submit Order to Backend or Generate WhatsApp direct link
+   * Submit Order to Backend (MongoDB) and save locally for admin view
    */
   async submitOrder(order: OrderPayload): Promise<{ success: boolean; orderId: string; message: string }> {
-    const orderId = `VEL-${Date.now().toString(36).toUpperCase()}`;
+    const orderId = order.orderId || `VEL-${Math.floor(1000 + Math.random() * 9000)}`;
+    const fullOrder: CustomerOrder = {
+      ...order,
+      orderId,
+      status: 'CONFIRMED',
+      createdAt: order.createdAt || new Date().toISOString(),
+    };
+
+    // Always update local admin orders list for instant reflection in Dashboard
+    try {
+      const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
+      const existingStr = localStorage.getItem(LOCAL_ORDERS_KEY);
+      const list: CustomerOrder[] = existingStr ? JSON.parse(existingStr) : [];
+      list.unshift(fullOrder);
+      localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn('Could not save order to localStorage:', e);
+    }
 
     if (!siteConfig.api.useMock) {
       try {
         const res = await fetch(`${siteConfig.api.baseUrl}/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...order, orderId }),
+          body: JSON.stringify(fullOrder),
         });
         if (res.ok) {
-          return { success: true, orderId, message: 'Ordine inviato con successo al server.' };
+          const data = await res.json().catch(() => ({}));
+          return {
+            success: true,
+            orderId,
+            message: data.message || 'Ordine registrato con successo nel database MongoDB.',
+          };
         }
       } catch (err) {
-        console.warn('Backend order submission error, fallback to client confirmation:', err);
+        console.warn('Backend order submission error, fallback to local confirmation:', err);
       }
     }
 
     // Mock processing delay
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 400));
     return {
       success: true,
       orderId,
       message: 'Ordine confermato con successo da VELORA Atelier Botanico!',
     };
+  },
+
+  /**
+   * Fetch orders for Admin Dashboard (from Spring Boot MongoDB or local storage)
+   */
+  async getOrders(): Promise<CustomerOrder[]> {
+    const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
+    if (!siteConfig.api.useMock) {
+      try {
+        const token = localStorage.getItem('velora_jwt_token');
+        const res = await fetch(`${siteConfig.api.baseUrl}/admin/orders`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Fetch admin orders failed, falling back to local orders:', err);
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem(LOCAL_ORDERS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  },
+
+  /**
+   * Update status of an order (CONFIRMED, DELIVERING, COMPLETED, CANCELLED)
+   */
+  async updateOrderStatus(orderId: string, status: CustomerOrder['status']): Promise<boolean> {
+    const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
+    try {
+      const saved = localStorage.getItem(LOCAL_ORDERS_KEY);
+      if (saved) {
+        const list: CustomerOrder[] = JSON.parse(saved);
+        const updated = list.map((o) => (o.orderId === orderId ? { ...o, status } : o));
+        localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(updated));
+      }
+    } catch {}
+
+    if (!siteConfig.api.useMock) {
+      try {
+        const token = localStorage.getItem('velora_jwt_token');
+        await fetch(`${siteConfig.api.baseUrl}/admin/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify({ status }),
+        });
+        return true;
+      } catch (e) {
+        console.warn('Backend order status update failed:', e);
+      }
+    }
+    return true;
+  },
+
+  /**
+   * Fetch Store Settings (Delivery pricing, free shipping toggle, announcement)
+   */
+  async getSettings(): Promise<Partial<StoreSettings> | null> {
+    if (!siteConfig.api.useMock) {
+      try {
+        const res = await fetch(`${siteConfig.api.baseUrl}/settings`);
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Fetch settings failed:', err);
+      }
+    }
+    return null;
+  },
+
+  /**
+   * Update Store Settings on Backend
+   */
+  async updateSettings(settings: Partial<StoreSettings>): Promise<boolean> {
+    if (!siteConfig.api.useMock) {
+      try {
+        const token = localStorage.getItem('velora_jwt_token');
+        const res = await fetch(`${siteConfig.api.baseUrl}/admin/settings`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify(settings),
+        });
+        return res.ok;
+      } catch (err) {
+        console.warn('Update settings failed:', err);
+      }
+    }
+    return true;
   },
 
   /**

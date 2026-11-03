@@ -15,6 +15,7 @@ public class StoreSettings {
     private String storeAddress = "Via Nomentana 38, 00013 Tor Lupara (RM)";
     private String deliveryArea = "tutta Roma";
     private double freeShippingThreshold = 50.0;
+    private boolean freeShippingEnabled = false;
     private double standardDeliveryFee = 5.0;
 
     // Dynamic Announcement Bar
@@ -66,6 +67,9 @@ public class StoreSettings {
 
     public double getFreeShippingThreshold() { return freeShippingThreshold; }
     public void setFreeShippingThreshold(double freeShippingThreshold) { this.freeShippingThreshold = freeShippingThreshold; }
+
+    public boolean isFreeShippingEnabled() { return freeShippingEnabled; }
+    public void setFreeShippingEnabled(boolean freeShippingEnabled) { this.freeShippingEnabled = freeShippingEnabled; }
 
     public double getStandardDeliveryFee() { return standardDeliveryFee; }
     public void setStandardDeliveryFee(double standardDeliveryFee) { this.standardDeliveryFee = standardDeliveryFee; }

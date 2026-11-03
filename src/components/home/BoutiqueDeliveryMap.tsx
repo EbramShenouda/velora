@@ -1,8 +1,10 @@
 import React from 'react';
 import { siteConfig } from '../../config/siteConfig';
-import { MapPin, Navigation, Clock, Phone, MessageCircle, Sparkles, Truck, CheckCircle2, ExternalLink } from 'lucide-react';
+import { useCatalog } from '../../context/CatalogContext';
+import { MapPin, Navigation, Clock, Phone, Sparkles, Truck, CheckCircle2, ExternalLink } from 'lucide-react';
 
 export const BoutiqueDeliveryMap: React.FC = () => {
+  const { deliverySettings } = useCatalog();
   return (
     <section id="bottega-mappa" className="relative z-10 py-24 section-glass-light border-b border-stone-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -86,7 +88,13 @@ export const BoutiqueDeliveryMap: React.FC = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Spedizione Gratuita:</strong> per tutti gli ordini superiori a {siteConfig.delivery.freeShippingThreshold.toFixed(2)} €.</span>
+                  <span>
+                    {deliverySettings.freeShippingEnabled ? (
+                      <><strong>Spedizione Gratuita:</strong> per tutti gli ordini superiori a {deliverySettings.freeShippingThreshold.toFixed(2)} €.</>
+                    ) : (
+                      <><strong>Consegna a Domicilio:</strong> tariffa dedicata di {deliverySettings.standardShippingFee.toFixed(2)} € (oppure ritiro gratuito in bottega).</>
+                    )}
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />

@@ -18,6 +18,9 @@ spring:
 
 # JWT and Security Settings
 velora:
+  admin:
+    initial-user: ${ADMIN_INITIAL_USER:admin}
+    initial-password: ${ADMIN_INITIAL_PASSWORD:velora2026!}
   jwt:
     # 256-bit base64 secret key
     secret: ${JWT_SECRET:vElOrABoTaNiCaL2026sEcReTkEySuPeRsEcUrE9876543210}

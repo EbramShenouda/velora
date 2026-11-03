@@ -87,10 +87,32 @@ export interface StoreSettings {
   storeAddress: string;
   deliveryArea: string;
   freeShippingThreshold: number;
+  freeShippingEnabled: boolean;
   standardShippingFee: number;
   operatingHours: string;
   whatsappNumber: string;
   announcement: AnnouncementConfig;
+}
+
+export interface DeliverySettings {
+  standardShippingFee: number;
+  freeShippingEnabled: boolean;
+  freeShippingThreshold: number;
+  deliveryArea: string;
+}
+
+export interface CustomerOrder {
+  id?: string;
+  orderId: string;
+  customer: OrderCustomerInfo;
+  items: CartItem[];
+  greetingCardText: string;
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  paymentMethod: string;
+  status: 'PENDING' | 'CONFIRMED' | 'DELIVERING' | 'COMPLETED' | 'CANCELLED';
+  createdAt?: string;
 }
 
 export interface OrderCustomerInfo {

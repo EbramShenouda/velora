@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCatalog } from '../context/CatalogContext';
 import { siteConfig } from '../config/siteConfig';
 import { BrandLogo } from '../components/layout/BrandLogo';
 import { ProductFormModal } from '../components/admin/ProductFormModal';
 import { AnnouncementBarEditor } from '../components/admin/AnnouncementBarEditor';
-import { Product, CategoryId } from '../types/catalog';
+import { Product, CategoryId, CustomerOrder } from '../types/catalog';
 import { getOptimizedImageUrl } from '../services/cloudinaryService';
 import {
   Lock,
@@ -20,9 +20,18 @@ import {
   Trash2,
   CheckCircle,
   Megaphone,
-  Eye,
   Store,
   Key,
+  Truck,
+  ShoppingBag,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  MessageCircle,
+  UserCheck,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -30,7 +39,7 @@ interface AdminPageProps {
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
-  const { isAuthenticated, user, login, logout, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, user, login, changeCredentials, logout, isLoading: authLoading } = useAuth();
   const {
     products,
     addProduct,
@@ -39,32 +48,78 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     toggleStock,
     toggleOffer,
     announcement,
+    deliverySettings,
+    updateDeliverySettings,
+    orders,
+    refreshOrders,
+    updateOrderStatus,
   } = useCatalog();
 
-  // Login Form State
-  const [usernameInput, setUsernameInput] = useState('admin');
-  const [passwordInput, setPasswordInput] = useState('velora2026!');
+  // 1. Login Form State (Strictly EMPTY by default, zero precompiled credentials)
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Admin Dashboard State
-  const [activeTab, setActiveTab] = useState<'catalog' | 'announcement'>('catalog');
+  // 2. Admin Dashboard State & Active Tab
+  const [activeTab, setActiveTab] = useState<'catalog' | 'announcement' | 'logistics' | 'orders' | 'security'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'stock' | 'out_of_stock' | 'promo' | CategoryId>('all');
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Handle Login
+  // 3. Logistics Settings State
+  const [standardFee, setStandardFee] = useState<number>(deliverySettings.standardShippingFee);
+  const [freeShippingActive, setFreeShippingActive] = useState<boolean>(deliverySettings.freeShippingEnabled);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(deliverySettings.freeShippingThreshold);
+  const [deliveryArea, setDeliveryArea] = useState<string>(deliverySettings.deliveryArea);
+  const [logisticsNotice, setLogisticsNotice] = useState<string | null>(null);
+  const [isSavingLogistics, setIsSavingLogistics] = useState(false);
+
+  // 4. Security Credentials State
+  const [newUsername, setNewUsername] = useState(user?.username || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securitySuccess, setSecuritySuccess] = useState<string | null>(null);
+  const [securityError, setSecurityError] = useState<string | null>(null);
+  const [isUpdatingCreds, setIsUpdatingCreds] = useState(false);
+
+  // Sync logistics local state when context changes
+  useEffect(() => {
+    setStandardFee(deliverySettings.standardShippingFee);
+    setFreeShippingActive(deliverySettings.freeShippingEnabled);
+    setFreeShippingThreshold(deliverySettings.freeShippingThreshold);
+    setDeliveryArea(deliverySettings.deliveryArea);
+  }, [deliverySettings]);
+
+  useEffect(() => {
+    if (user?.username) {
+      setNewUsername(user.username);
+    }
+  }, [user]);
+
+  // Refresh orders when opening orders tab
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      refreshOrders();
+    }
+  }, [activeTab]);
+
+  // Handle Clean Login (no demo shortcuts)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
     setIsLoggingIn(true);
     try {
-      const result = await login(usernameInput, passwordInput);
+      const result = await login(usernameInput.trim(), passwordInput);
       if (!result.success) {
         setLoginError(result.error || 'Credenziali non valide.');
+      } else {
+        setUsernameInput('');
+        setPasswordInput('');
       }
     } catch {
       setLoginError('Impossibile accedere al servizio.');
@@ -79,13 +134,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     const inStock = products.filter((p) => p.stockQuantity > 0).length;
     const outOfStock = products.filter((p) => p.stockQuantity === 0).length;
     const inPromo = products.filter((p) => p.isPromo).length;
-    return { total, inStock, outOfStock, inPromo };
-  }, [products]);
+    const ordersCount = orders.length;
+    return { total, inStock, outOfStock, inPromo, ordersCount };
+  }, [products, orders]);
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      // Search text
       const matchesSearch =
         searchQuery === '' ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,7 +149,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
 
       if (!matchesSearch) return false;
 
-      // Filter category/type
       if (filterType === 'all') return true;
       if (filterType === 'stock') return p.stockQuantity > 0;
       if (filterType === 'out_of_stock') return p.stockQuantity === 0;
@@ -125,6 +179,64 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     await deleteProduct(id);
   };
 
+  // Save Logistics Delivery Pricing Settings
+  const handleSaveLogistics = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingLogistics(true);
+    setLogisticsNotice(null);
+    try {
+      await updateDeliverySettings({
+        standardShippingFee: Number(standardFee),
+        freeShippingEnabled: freeShippingActive,
+        freeShippingThreshold: Number(freeShippingThreshold),
+        deliveryArea: deliveryArea.trim() || 'tutta Roma',
+      });
+      setLogisticsNotice('✓ Tariffe di consegna e politiche di spedizione aggiornate con successo!');
+      setTimeout(() => setLogisticsNotice(null), 4000);
+    } catch {
+      setLogisticsNotice('Errore durante il salvataggio delle impostazioni di consegna.');
+    } finally {
+      setIsSavingLogistics(false);
+    }
+  };
+
+  // Save Admin Security Credentials
+  const handleSaveSecurity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecuritySuccess(null);
+    setSecurityError(null);
+
+    if (!currentPassword) {
+      setSecurityError('La password attuale è obbligatoria per confermare la modifica.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setSecurityError('La nuova password deve contenere almeno 6 caratteri.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setSecurityError('La nuova password e la conferma non coincidono.');
+      return;
+    }
+
+    setIsUpdatingCreds(true);
+    try {
+      const res = await changeCredentials(currentPassword, newUsername, newPassword);
+      if (res.success) {
+        setSecuritySuccess(res.message || 'Credenziali aggiornate con successo su MongoDB!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setSecurityError(res.error || 'Errore durante l\'aggiornamento delle credenziali.');
+      }
+    } catch {
+      setSecurityError('Impossibile contattare il server per aggiornare le credenziali.');
+    } finally {
+      setIsUpdatingCreds(false);
+    }
+  };
+
   // Navigates back to storefront
   const navigateBack = () => {
     if (onBackToStore) {
@@ -136,7 +248,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   };
 
   // =========================================================================
-  // 1. LOGIN SCREEN (If not authenticated)
+  // 1. LOGIN SCREEN (Clean & Professional, Zero Prefilled Credentials)
   // =========================================================================
   if (!isAuthenticated && !authLoading) {
     return (
@@ -162,7 +274,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 Accesso Dashboard
               </h2>
               <p className="text-xs text-stone-500">
-                Gestisci catalogo, scatta foto, aggiorna lo stock e le promozioni del giorno.
+                Gestisci catalogo prodotti, ordini ricevuti, tariffe di consegna e sicurezza.
               </p>
             </div>
           </div>
@@ -184,14 +296,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 required
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="admin"
-                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium"
+                placeholder="Inserisci username o email..."
+                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium placeholder:text-stone-400"
               />
             </div>
 
             <div>
               <label className="block font-bold uppercase tracking-wider text-stone-600 mb-1">
-                Password o PIN Bottega
+                Password Amministratore
               </label>
               <input
                 type="password"
@@ -199,23 +311,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium"
+                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium placeholder:text-stone-400"
               />
-            </div>
-
-            {/* Quick Demo Fill Pill */}
-            <div className="p-3 rounded-xl bg-botanical-50 border border-botanical-100 text-[11px] text-botanical-900 flex items-center justify-between">
-              <span>Credenziali rapide: <strong>admin</strong> / <strong>velora2026!</strong></span>
-              <button
-                type="button"
-                onClick={() => {
-                  setUsernameInput('admin');
-                  setPasswordInput('velora2026!');
-                }}
-                className="text-clay underline font-bold"
-              >
-                Compila
-              </button>
             </div>
 
             <button
@@ -224,7 +321,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
               className="w-full py-4 bg-botanical-950 hover:bg-clay text-white rounded-2xl font-bold uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
             >
               <Lock className="w-4 h-4" />
-              <span>{isLoggingIn ? 'Verifica...' : 'Accedi al Pannello →'}</span>
+              <span>{isLoggingIn ? 'Verifica in corso...' : 'Accedi al Pannello →'}</span>
             </button>
           </form>
 
@@ -316,60 +413,96 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider text-stone-500">
-                Esauriti
+                Ordini Ricevuti
               </span>
-              <p className="text-2xl sm:text-3xl font-serif font-bold text-rose-600 mt-0.5">
-                {stats.outOfStock}
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-botanical-950 mt-0.5">
+                {stats.ordersCount}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-clay flex items-center justify-center">
+              <ShoppingBag className="w-5 h-5" />
             </div>
           </div>
 
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider text-stone-500">
-                In Offerta 🔥
+                Tariffa Consegna
               </span>
               <p className="text-2xl sm:text-3xl font-serif font-bold text-clay mt-0.5">
-                {stats.inPromo}
+                {deliverySettings.standardShippingFee.toFixed(2)} €
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-clay flex items-center justify-center">
-              <Flame className="w-5 h-5 fill-clay" />
+            <div className="w-10 h-10 rounded-xl bg-stone-50 text-stone-700 flex items-center justify-center">
+              <Truck className="w-5 h-5" />
             </div>
           </div>
 
         </div>
 
         {/* Section Navigation Tabs */}
-        <div className="flex border-b border-stone-300 gap-3 text-xs font-bold uppercase tracking-wider">
+        <div className="flex border-b border-stone-300 gap-2 sm:gap-4 text-xs font-bold uppercase tracking-wider overflow-x-auto pb-1">
           <button
             onClick={() => setActiveTab('catalog')}
-            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'catalog'
                 ? 'border-botanical-950 text-botanical-950 font-bold'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
             }`}
           >
             <Package className="w-4 h-4" />
-            <span>Gestione Catalogo Prodotti ({products.length})</span>
+            <span>Catalogo Prodotti ({products.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'orders'
+                ? 'border-botanical-950 text-botanical-950 font-bold'
+                : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Ordini Ricevuti ({orders.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('logistics')}
+            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'logistics'
+                ? 'border-botanical-950 text-botanical-950 font-bold'
+                : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            <span>Tariffe & Spedizioni</span>
           </button>
 
           <button
             onClick={() => setActiveTab('announcement')}
-            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'announcement'
                 ? 'border-botanical-950 text-botanical-950 font-bold'
                 : 'border-transparent text-stone-500 hover:text-stone-800'
             }`}
           >
             <Megaphone className="w-4 h-4" />
-            <span>Top Announcement & Promozioni</span>
+            <span>Top Announcement</span>
             {announcement.active && (
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'security'
+                ? 'border-botanical-950 text-botanical-950 font-bold'
+                : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <Key className="w-4 h-4" />
+            <span>Account & Sicurezza</span>
           </button>
         </div>
 
@@ -482,7 +615,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 onClick={() => setFilterType('funebre')}
                 className={`px-3 py-1.5 rounded-full font-bold uppercase text-[11px] transition-all ${
                   filterType === 'funebre'
-                    ? 'bg-stone-800 text-white'
+                    ? 'bg-botanical-950 text-white'
                     : 'bg-white border border-stone-300 text-stone-600 hover:bg-stone-50'
                 }`}
               >
@@ -492,8 +625,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
 
             {/* Products Table (Desktop) / Cards (Mobile) */}
             <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-              
-              {/* Desktop Table View */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-stone-50 text-stone-500 font-bold uppercase tracking-wider border-b border-stone-200">
@@ -539,75 +670,60 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                                 <span className="font-bold text-clay text-sm">
                                   {p.price},00 €
                                 </span>
-                                <span className="text-[10px] text-stone-400 line-through ml-1.5">
-                                  {p.originalPrice},00 €
-                                </span>
-                                <span className="block text-[9px] font-bold text-amber-700">
-                                  -{p.promoDiscountPct}% Offerta
-                                </span>
+                                {p.originalPrice && (
+                                  <span className="text-[11px] text-stone-400 line-through ml-1.5">
+                                    {p.originalPrice},00 €
+                                  </span>
+                                )}
                               </div>
                             ) : (
-                              <span className="font-bold text-stone-900 text-sm">
+                              <span className="font-bold text-botanical-950 text-sm">
                                 {p.price},00 €
                               </span>
                             )}
                           </td>
 
-                          {/* Quick Stock Toggle */}
                           <td className="py-3 px-4 text-center">
                             <button
                               type="button"
                               onClick={() => toggleStock(p.id)}
-                              className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all inline-flex items-center gap-1.5 shadow-sm ${
+                              className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all active:scale-95 ${
                                 isOutOfStock
-                                  ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
-                                  : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                               }`}
                             >
-                              <span
-                                className={`w-2 h-2 rounded-full ${
-                                  isOutOfStock ? 'bg-rose-600' : 'bg-emerald-600'
-                                }`}
-                              />
-                              <span>{isOutOfStock ? 'Esaurito (0)' : `In Stock (${p.stockQuantity})`}</span>
+                              {isOutOfStock ? 'Esaurito (0)' : `Disponibile (${p.stockQuantity})`}
                             </button>
                           </td>
 
-                          {/* Quick Promo Toggle */}
                           <td className="py-3 px-4 text-center">
                             <button
                               type="button"
                               onClick={() => toggleOffer(p.id, !p.isPromo)}
-                              className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all inline-flex items-center gap-1 shadow-sm ${
+                              className={`px-3 py-1 rounded-full font-bold text-[11px] transition-all flex items-center justify-center gap-1 mx-auto ${
                                 p.isPromo
-                                  ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300'
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
                                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                               }`}
                             >
-                              {p.isPromo ? (
-                                <>
-                                  <Flame className="w-3 h-3 text-clay fill-clay" />
-                                  <span>In Offerta</span>
-                                </>
-                              ) : (
-                                <span>Prezzo Standard</span>
-                              )}
+                              <Flame className="w-3.5 h-3.5 text-clay" />
+                              <span>{p.isPromo ? `Offerta (-${p.promoDiscountPct || 15}%)` : 'No Sconto'}</span>
                             </button>
                           </td>
 
-                          {/* Edit / Delete Buttons */}
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => handleOpenEditModal(p)}
-                                className="p-2 text-stone-600 hover:text-botanical-950 hover:bg-stone-100 rounded-lg transition-colors"
-                                title="Modifica Creazione"
+                                className="p-2 rounded-lg hover:bg-stone-100 text-stone-600 hover:text-botanical-950 transition-colors"
+                                title="Modifica"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDeleteProduct(p.id)}
-                                className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                className="p-2 rounded-lg hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-colors"
                                 title="Elimina"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -645,7 +761,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                             <span className="font-bold text-clay text-base">
                               {p.price},00 €
                             </span>
-                            {p.isPromo && (
+                            {p.originalPrice && p.originalPrice > p.price && (
                               <span className="text-xs text-stone-400 line-through">
                                 {p.originalPrice},00 €
                               </span>
@@ -654,18 +770,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                         </div>
                       </div>
 
-                      {/* Mobile Actions: Stock Toggle, Offer Toggle, Edit */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100">
+                      <div className="flex items-center gap-2 pt-2 border-t border-stone-100">
                         <button
                           type="button"
                           onClick={() => toggleStock(p.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
                             isOutOfStock
                               ? 'bg-rose-100 text-rose-800'
-                              : 'bg-emerald-100 text-emerald-800'
+                              : 'bg-emerald-100 text-emerald-900'
                           }`}
                         >
-                          {isOutOfStock ? '✕ Esaurito' : `✓ Stock (${p.stockQuantity})`}
+                          {isOutOfStock ? 'Esaurito' : `In Stock (${p.stockQuantity})`}
                         </button>
 
                         <button
@@ -705,10 +820,373 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         )}
 
         {/* ===================================================================
-            TAB 2: TOP ANNOUNCEMENT & PROMO EDITOR
+            TAB 2: ORDINI RICEVUTI (MongoDB / Realtime)
+            =================================================================== */}
+        {activeTab === 'orders' && (
+          <div className="space-y-4">
+            <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-serif text-2xl font-bold text-botanical-950">
+                  Registro Ordini Ricevuti
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Ordini confermati dal carrello e sincronizzati con il database MongoDB.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={refreshOrders}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-xl text-xs font-bold text-botanical-950 flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-clay" />
+                <span>Aggiorna Elenco</span>
+              </button>
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center text-stone-400 space-y-2">
+                <ShoppingBag className="w-10 h-10 mx-auto text-stone-300" />
+                <p className="text-sm font-semibold">Nessun ordine presente al momento.</p>
+                <p className="text-xs">Quando un cliente conferma un ordine nel carrello, apparirà istantaneamente qui.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((ord) => (
+                  <div
+                    key={ord.orderId}
+                    className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-botanical-950 text-petal">
+                            #{ord.orderId}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                            ord.status === 'COMPLETED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : ord.status === 'DELIVERING'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {ord.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{ord.createdAt ? new Date(ord.createdAt).toLocaleString('it-IT') : 'Recente'}</span>
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs text-stone-500">Totale Ordine:</span>
+                        <p className="font-serif text-xl font-bold text-clay leading-tight">
+                          {ord.total.toFixed(2)} €
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Customer & Delivery Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-stone-50/70 p-4 rounded-xl border border-stone-200/80">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-botanical-950 flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-clay" />
+                          <span>Cliente: {ord.customer.fullName}</span>
+                        </p>
+                        <p className="text-stone-600">
+                          Telefono: <strong>{ord.customer.phone}</strong>
+                        </p>
+                        <p className="text-stone-600 flex items-start gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-clay shrink-0 mt-0.5" />
+                          <span>{ord.customer.deliveryAddress}</span>
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <p className="text-stone-600 flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-stone-400" />
+                          <span>Data Consegna: <strong>{ord.customer.deliveryDate}</strong> ({ord.customer.timeSlot})</span>
+                        </p>
+                        {ord.greetingCardText && ord.greetingCardText !== 'Nessun bigliettino' && (
+                          <div className="p-2 bg-white rounded-lg border border-stone-200 text-stone-700 italic">
+                            💌 "{ord.greetingCardText}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Items List */}
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-bold uppercase text-stone-500">Articoli Ordinati:</p>
+                      <div className="space-y-1">
+                        {ord.items.map((it, idx) => (
+                          <div key={idx} className="flex justify-between text-xs text-stone-700">
+                            <span>{it.quantity}x <strong>{it.name}</strong></span>
+                            <span className="font-bold text-stone-900">{(it.price * it.quantity).toFixed(2)} €</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Actions: Contact customer on WhatsApp & Change Status */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100">
+                      <a
+                        href={`https://wa.me/${ord.customer.phone.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        <span>Contatta su WhatsApp</span>
+                      </a>
+
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-stone-500 font-semibold">Stato:</span>
+                        <select
+                          value={ord.status}
+                          onChange={(e) =>
+                            updateOrderStatus(ord.orderId, e.target.value as CustomerOrder['status'])
+                          }
+                          className="px-3 py-1.5 rounded-lg border border-stone-300 bg-white font-bold text-botanical-950 focus:outline-none"
+                        >
+                          <option value="CONFIRMED">Confermato</option>
+                          <option value="DELIVERING">In Consegna</option>
+                          <option value="COMPLETED">Completato</option>
+                          <option value="CANCELLED">Annullato</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===================================================================
+            TAB 3: TARIFFE CONSEGNA & SPEDIZIONI (Configurable from Admin)
+            =================================================================== */}
+        {activeTab === 'logistics' && (
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm max-w-3xl space-y-6">
+            <div>
+              <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-clay">
+                Logistica & Politiche Commerciali
+              </span>
+              <h3 className="font-serif text-3xl font-bold text-botanical-950 mt-1">
+                Configurazione Tariffe di Consegna
+              </h3>
+              <p className="text-xs text-stone-500 mt-1">
+                Configura se la consegna ha sempre un costo standard (non azzerabile oltre i 50 €) oppure se attivare la soglia di spedizione gratuita.
+              </p>
+            </div>
+
+            {logisticsNotice && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{logisticsNotice}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveLogistics} className="space-y-6 text-xs">
+              
+              {/* Standard Delivery Fee */}
+              <div className="space-y-1.5">
+                <label className="block font-bold uppercase tracking-wider text-stone-700">
+                  Costo Standard di Consegna a Domicilio (€) *
+                </label>
+                <p className="text-[11px] text-stone-500">
+                  Importo applicato per le consegne a mano su Roma.
+                </p>
+                <div className="relative max-w-xs">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    required
+                    value={standardFee}
+                    onChange={(e) => setStandardFee(parseFloat(e.target.value) || 0)}
+                    className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-base font-bold text-botanical-950 focus:outline-none focus:ring-2 focus:ring-botanical-900"
+                  />
+                  <span className="absolute right-4 top-3.5 text-stone-400 font-bold">€</span>
+                </div>
+              </div>
+
+              {/* Free Shipping Toggle Switch */}
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="pr-4">
+                    <span className="font-bold text-sm text-botanical-950 block">
+                      Abilita Spedizione Gratuita oltre Soglia di Spesa
+                    </span>
+                    <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                      Se <strong>disattivata</strong>, il costo di consegna ({standardFee.toFixed(2)} €) viene sempre applicato a tutti gli ordini a domicilio, anche superando 50 € (il ritiro in bottega resta sempre a 0 €).
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={freeShippingActive}
+                      onChange={(e) => setFreeShippingActive(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-12 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-clay" />
+                  </label>
+                </div>
+
+                {freeShippingActive && (
+                  <div className="pt-3 border-t border-stone-200/80 space-y-2 animate-in fade-in">
+                    <label className="block font-bold uppercase tracking-wider text-stone-700">
+                      Soglia Minima di Spesa per la Spedizione Gratuita (€)
+                    </label>
+                    <div className="relative max-w-xs">
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        value={freeShippingThreshold}
+                        onChange={(e) => setFreeShippingThreshold(parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-stone-300 bg-white text-sm font-bold text-botanical-950"
+                      />
+                      <span className="absolute right-4 top-3 text-stone-400 font-bold">€</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Delivery Area */}
+              <div className="space-y-1.5">
+                <label className="block font-bold uppercase tracking-wider text-stone-700">
+                  Area Geografica Coperta
+                </label>
+                <input
+                  type="text"
+                  value={deliveryArea}
+                  onChange={(e) => setDeliveryArea(e.target.value)}
+                  placeholder="Es. tutta Roma e provincia"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-xs focus:outline-none focus:ring-1 focus:ring-botanical-900"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSavingLogistics}
+                className="px-7 py-3.5 bg-botanical-950 hover:bg-clay text-white rounded-xl font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 disabled:opacity-50"
+              >
+                {isSavingLogistics ? 'Salvataggio...' : 'Salva Impostazioni Consegna'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* ===================================================================
+            TAB 4: TOP ANNOUNCEMENT & PROMO EDITOR
             =================================================================== */}
         {activeTab === 'announcement' && (
           <AnnouncementBarEditor />
+        )}
+
+        {/* ===================================================================
+            TAB 5: IMPOSTAZIONI ACCOUNT & SICUREZZA (MongoDB Auth & Change Credentials)
+            =================================================================== */}
+        {activeTab === 'security' && (
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-sm max-w-2xl space-y-6">
+            <div>
+              <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-clay">
+                Sicurezza Bottega & Accesso
+              </span>
+              <h3 className="font-serif text-3xl font-bold text-botanical-950 mt-1">
+                Modifica Credenziali Amministratore
+              </h3>
+              <p className="text-xs text-stone-500 mt-1">
+                Aggiorna il nome utente o la password di accesso alla Dashboard. Le credenziali vengono verificate e salvate direttamente su MongoDB con cifratura sicura BCrypt.
+              </p>
+            </div>
+
+            {securitySuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{securitySuccess}</span>
+              </div>
+            )}
+
+            {securityError && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{securityError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveSecurity} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold uppercase tracking-wider text-stone-700 mb-1">
+                  Nuovo Username / Email
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  placeholder="Es. fiorista_peter"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase tracking-wider text-stone-700 mb-1">
+                  Password Attuale (per verifica sicurezza) *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Inserisci la password attuale..."
+                  className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-stone-700 mb-1">
+                    Nuova Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimo 6 caratteri..."
+                    className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-stone-700 mb-1">
+                    Conferma Nuova Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Ripeti la nuova password..."
+                    className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-cream text-stone-800 focus:outline-none focus:ring-2 focus:ring-botanical-900 font-medium"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isUpdatingCreds}
+                className="px-7 py-3.5 bg-botanical-950 hover:bg-clay text-white rounded-xl font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-petal" />
+                <span>{isUpdatingCreds ? 'Salvataggio su MongoDB...' : 'Aggiorna Credenziali su MongoDB'}</span>
+              </button>
+            </form>
+          </div>
         )}
 
       </main>
@@ -726,3 +1204,4 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   );
 };
 
+export default AdminPage;

@@ -105,6 +105,8 @@ VITE_STORE_MAPS_QUERY="Via Nomentana 38 00013 Tor Lupara Fonte Nuova RM"
 VITE_GOOGLE_MAPS_URL="https://www.google.com/maps/dir/?api=1&destination=Via+Nomentana+38+00013+Tor+Lupara+Fonte+Nuova+RM"
 VITE_API_BASE_URL="http://localhost:8080/api/v1"
 VITE_USE_MOCK_API="true"
+VITE_CLOUDINARY_CLOUD_NAME="kah2quoa"
+VITE_CLOUDINARY_UPLOAD_PRESET="velora_catalog"
 ```
 
 ---
@@ -126,10 +128,22 @@ VITE_USE_MOCK_API="true"
 - Preview reattiva del nastro in raso color crema con caratteri in lamina d'oro (max 45 caratteri).
 - Selezione del luogo di celebrazione (Chiesa, Camera Ardente, Cimitero, Domicilio) e orario della funzione con passaggio diretto al carrello.
 
-### 4. Carrello Avanzato e Checkout WhatsApp (`CartDrawer.tsx`)
-- Barra animata con percentuale dinamica per la **spedizione gratuita sopra i 50,00 €**.
-- Anteprima calligrafica in tempo reale del biglietto d'auguri su cartoncino avorio.
-- Generatore di ordine diretto via **WhatsApp Business** con riepilogo formattato in markdown con emoji e totali per consegna in tutta Roma.
+### 4. Carrello Avanzato e Checkout WhatsApp Reale (`CartDrawer.tsx`)
+- Dedica bigliettino d'auguri pulita con campo testuale essenziale (valore iniziale vuoto).
+- Validazione in tempo reale di tutti i campi obbligatori (Nome, Telefono, Indirizzo o Ritiro in Bottega).
+- Tariffa di consegna configurabile da Dashboard Admin: possibilità di impostare la tariffa standard fissa o attivare la soglia di spedizione gratuita (il ritiro in bottega è sempre a 0,00 €).
+- Generazione codice ordine univoco (`VEL-XXXX`), salvataggio su database MongoDB e apertura automatica del messaggio formattato su WhatsApp con pulsante di sicurezza per riaprirlo.
+
+### 5. Upload Immagini Cloudinary Unsigned (`cloudinaryService.ts` & `ImageUploader.tsx`)
+- Upload diretto lato client (smartphone o PC) verso Cloudinary tramite preset *unsigned* senza esporre API Secret.
+- Trasformazione ed ottimizzazione automatica dei formati (WebP / AVIF) e compressione dinamica della qualità (`f_auto,q_auto,w_800`).
+- Sincronizzazione automatica del campo `imageUrl` con l'API Spring Boot e la Dashboard Admin del fiorista.
+
+### 6. Autenticazione Admin MongoDB e Gestione Sicurezza (`AdminPage.tsx` & Backend)
+- Schermata di login professionale a credenziali pulite e rigorosamente vuote di default (nessuna credenziale esposta o visibile).
+- Seed automatico al primo avvio su MongoDB da variabili d'ambiente (`ADMIN_INITIAL_USER` e `ADMIN_INITIAL_PASSWORD`) con hashing BCrypt.
+- Sezione dedicata "Account & Sicurezza" nella Dashboard per cambiare username e password previa verifica della password attuale.
+- Sezione "Tariffe & Spedizioni" per configurare in tempo reale il costo di consegna e la soglia di spedizione gratuita.
 
 ---
 

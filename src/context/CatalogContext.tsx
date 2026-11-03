@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, PromoOffer, CategoryId, AnnouncementConfig } from '../types/catalog';
+import { Product, PromoOffer, CategoryId, AnnouncementConfig, DeliverySettings, CustomerOrder } from '../types/catalog';
 import { CatalogApi, INITIAL_PRODUCTS, PROMO_OFFERS } from '../services/api';
 import { siteConfig } from '../config/siteConfig';
 
@@ -16,11 +16,14 @@ interface CatalogContextType {
   activePromo: PromoOffer | null;
   isSolemnMode: boolean; // Triggers solemn silver light on 3D flower in Arte Funebre
   announcement: AnnouncementConfig;
+  deliverySettings: DeliverySettings;
+  orders: CustomerOrder[];
   setActiveCategory: (cat: CategoryId) => void;
   setIsSolemnMode: (mode: boolean) => void;
   filterByCategory: (cat: CategoryId) => void;
   getProductById: (id: string) => Product | undefined;
   refreshCatalog: () => Promise<void>;
+  refreshOrders: () => Promise<void>;
   // CRUD actions for Admin
   addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<Product>;
@@ -28,17 +31,21 @@ interface CatalogContextType {
   toggleStock: (id: string) => Promise<void>;
   toggleOffer: (id: string, isPromo: boolean, discountPrice?: number, discountPct?: number) => Promise<void>;
   updateAnnouncement: (config: Partial<AnnouncementConfig>) => void;
+  updateDeliverySettings: (settings: Partial<DeliverySettings>) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: CustomerOrder['status']) => Promise<void>;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 
 const LOCAL_PRODUCTS_KEY = 'velora_custom_products_v1';
 const LOCAL_ANNOUNCEMENT_KEY = 'velora_announcement_v1';
+const LOCAL_DELIVERY_KEY = 'velora_delivery_settings_v1';
+const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
 
 const DEFAULT_ANNOUNCEMENT: AnnouncementConfig = {
   message: 'Consegna espressa a mano garantita in tutta Roma dalla nostra bottega',
   badge: `${siteConfig.brand.name}:`,
-  secondaryNotice: `✨ Consegna Gratuita sopra ${siteConfig.delivery.freeShippingThreshold.toFixed(2)} € • 💌 Biglietto a mano incluso`,
+  secondaryNotice: `🚚 Consegna climatizzata in tutta Roma • 💌 Biglietto a mano incluso`,
   active: true,
   specialEvent: 'standard',
 };
@@ -68,6 +75,78 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     return DEFAULT_ANNOUNCEMENT;
   });
+
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettings>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_DELIVERY_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Could not read delivery settings from localStorage', e);
+    }
+    return {
+      standardShippingFee: siteConfig.delivery.standardShippingFee || 5.0,
+      freeShippingEnabled: false, // Default is false: delivery fee is NOT 0 by default, even over 50€
+      freeShippingThreshold: siteConfig.delivery.freeShippingThreshold || 50.0,
+      deliveryArea: siteConfig.delivery.area || 'tutta Roma',
+    };
+  });
+
+  const [orders, setOrders] = useState<CustomerOrder[]>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_ORDERS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Could not read orders from localStorage', e);
+    }
+    return [];
+  });
+
+  // Save delivery settings to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_DELIVERY_KEY, JSON.stringify(deliverySettings));
+    } catch (e) {}
+  }, [deliverySettings]);
+
+  // Save orders to local storage
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(orders));
+    } catch (e) {}
+  }, [orders]);
+
+  const refreshOrders = async () => {
+    try {
+      const list = await CatalogApi.getOrders();
+      if (list && list.length >= 0) {
+        setOrders(list);
+      }
+    } catch (err) {
+      console.warn('Failed to refresh orders:', err);
+    }
+  };
+
+  const updateDeliverySettings = async (settings: Partial<DeliverySettings>) => {
+    setDeliverySettings((prev) => {
+      const next = { ...prev, ...settings };
+      localStorage.setItem(LOCAL_DELIVERY_KEY, JSON.stringify(next));
+      return next;
+    });
+
+    await CatalogApi.updateSettings({
+      standardShippingFee: settings.standardShippingFee ?? deliverySettings.standardShippingFee,
+      freeShippingEnabled: settings.freeShippingEnabled ?? deliverySettings.freeShippingEnabled,
+      freeShippingThreshold: settings.freeShippingThreshold ?? deliverySettings.freeShippingThreshold,
+      deliveryArea: settings.deliveryArea ?? deliverySettings.deliveryArea,
+    });
+  };
+
+  const updateOrderStatus = async (orderId: string, status: CustomerOrder['status']) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.orderId === orderId ? { ...o, status } : o))
+    );
+    await CatalogApi.updateOrderStatus(orderId, status);
+  };
 
   // Save to local storage on changes
   useEffect(() => {
@@ -284,17 +363,22 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activePromo,
         isSolemnMode,
         announcement,
+        deliverySettings,
+        orders,
         setActiveCategory,
         setIsSolemnMode,
         filterByCategory,
         getProductById,
         refreshCatalog,
+        refreshOrders,
         addProduct,
         updateProduct,
         deleteProduct,
         toggleStock,
         toggleOffer,
         updateAnnouncement,
+        updateDeliverySettings,
+        updateOrderStatus,
       }}
     >
       {children}

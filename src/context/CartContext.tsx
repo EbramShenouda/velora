@@ -1,13 +1,14 @@
 /**
  * VELORA - CartContext
- * Global shopping cart state with live free shipping calculations,
- * custom handwritten card dedication, delivery details and order orchestration.
+ * Global shopping cart state with live configurable delivery calculations,
+ * custom card dedication, delivery details and order orchestration.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { CartItem, Product, FuneralConfig, OrderPayload } from '../types/catalog';
 import { siteConfig } from '../config/siteConfig';
 import { CatalogApi } from '../services/api';
+import { useCatalog } from './CatalogContext';
 
 interface CartContextType {
   items: CartItem[];
@@ -15,6 +16,7 @@ interface CartContextType {
   subtotal: number;
   shippingFee: number;
   total: number;
+  freeShippingEnabled: boolean;
   freeShippingThreshold: number;
   freeShippingProgressPct: number;
   amountNeededForFreeShipping: number;
@@ -38,7 +40,7 @@ interface CartContextType {
   updateQuantity: (id: string, delta: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
-  submitOrder: (paymentMethod?: 'cash_on_delivery' | 'stripe' | 'pos_at_door') => Promise<{ success: boolean; orderId: string; message: string }>;
+  submitOrder: (orderOverride?: Partial<OrderPayload>) => Promise<{ success: boolean; orderId: string; message: string }>;
   openWhatsAppOrder: () => void;
 }
 
@@ -47,6 +49,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEY = 'velora_cart_items_v2';
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { deliverySettings, refreshOrders } = useCatalog();
+
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -69,15 +73,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
-  const [greetingCardText, setGreetingCardText] = useState<string>(
-    'Tanti auguri di cuore, che questi fiori portino gioia e profumo!'
-  );
   
-  // Format today's date in YYYY-MM-DD
+  // ALL text fields strictly start EMPTY
+  const [greetingCardText, setGreetingCardText] = useState<string>('');
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const [deliveryDate, setDeliveryDate] = useState<string>(todayStr);
   const [timeSlot, setTimeSlot] = useState<string>('Mattina (09:00 - 12:30)');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('Via del Corso 12, Roma');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
 
@@ -98,25 +100,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }, [items]);
 
-  const freeShippingThreshold = siteConfig.delivery.freeShippingThreshold; // 50€
-  const isFreeShipping = subtotal >= freeShippingThreshold;
-  
+  // Configurable Delivery Pricing from Catalog/Admin settings
+  const isPickup = timeSlot.includes('Ritiro in Bottega');
+  const freeShippingEnabled = deliverySettings?.freeShippingEnabled ?? false;
+  const freeShippingThreshold = deliverySettings?.freeShippingThreshold ?? siteConfig.delivery.freeShippingThreshold;
+  const standardFee = deliverySettings?.standardShippingFee ?? siteConfig.delivery.standardShippingFee;
+
+  // Free shipping only applies if freeShippingEnabled is true AND subtotal meets threshold
+  const isFreeShipping = freeShippingEnabled && subtotal >= freeShippingThreshold;
+
   const shippingFee = useMemo(() => {
     if (subtotal === 0) return 0;
-    if (timeSlot === 'Ritiro in Bottega (Gratis)') return 0;
-    return isFreeShipping ? 0 : siteConfig.delivery.standardShippingFee;
-  }, [subtotal, isFreeShipping, timeSlot]);
+    if (isPickup) return 0; // "Ritiro in Bottega (Gratis)" is always 0 €
+    if (isFreeShipping) return 0;
+    return standardFee;
+  }, [subtotal, isPickup, isFreeShipping, standardFee]);
 
   const total = subtotal + shippingFee;
 
   const freeShippingProgressPct = useMemo(() => {
-    if (subtotal <= 0) return 0;
+    if (!freeShippingEnabled || subtotal <= 0) return 0;
     return Math.min(Math.round((subtotal / freeShippingThreshold) * 100), 100);
-  }, [subtotal, freeShippingThreshold]);
+  }, [subtotal, freeShippingEnabled, freeShippingThreshold]);
 
   const amountNeededForFreeShipping = useMemo(() => {
+    if (!freeShippingEnabled) return 0;
     return Math.max(0, freeShippingThreshold - subtotal);
-  }, [subtotal, freeShippingThreshold]);
+  }, [subtotal, freeShippingEnabled, freeShippingThreshold]);
 
   const addToCart = (product: Product, quantity = 1) => {
     setItems((prev) => {
@@ -179,36 +189,38 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   };
 
-  const createOrderPayload = (
-    paymentMethod: 'cash_on_delivery' | 'stripe' | 'pos_at_door' = 'cash_on_delivery'
-  ): OrderPayload => {
+  const createOrderPayload = (override?: Partial<OrderPayload>): OrderPayload => {
+    const generatedId = `VEL-${Math.floor(1000 + Math.random() * 9000)}`;
     return {
+      orderId: generatedId,
       customer: {
-        fullName: customerName || 'Cliente VELORA',
-        phone: customerPhone,
-        deliveryAddress,
+        fullName: customerName.trim(),
+        phone: customerPhone.trim(),
+        deliveryAddress: isPickup ? 'Ritiro in Bottega a Tor Lupara (Gratis)' : deliveryAddress.trim(),
         deliveryDate,
         timeSlot,
       },
-      items,
-      greetingCardText,
+      items: [...items],
+      greetingCardText: greetingCardText.trim() || 'Nessun bigliettino',
       subtotal,
       shippingFee,
       total,
-      paymentMethod,
+      paymentMethod: 'cash_on_delivery',
+      createdAt: new Date().toISOString(),
+      ...override,
     };
   };
 
-  const submitOrder = async (
-    paymentMethod: 'cash_on_delivery' | 'stripe' | 'pos_at_door' = 'cash_on_delivery'
-  ) => {
-    const orderPayload = createOrderPayload(paymentMethod);
+  const submitOrder = async (orderOverride?: Partial<OrderPayload>) => {
+    const orderPayload = createOrderPayload(orderOverride);
     const result = await CatalogApi.submitOrder(orderPayload);
+    // Refresh admin orders view immediately
+    refreshOrders();
     return result;
   };
 
   const openWhatsAppOrder = () => {
-    const orderPayload = createOrderPayload('cash_on_delivery');
+    const orderPayload = createOrderPayload();
     const url = CatalogApi.generateWhatsAppOrderUrl(orderPayload);
     window.open(url, '_blank');
   };
@@ -221,6 +233,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subtotal,
         shippingFee,
         total,
+        freeShippingEnabled,
         freeShippingThreshold,
         freeShippingProgressPct,
         amountNeededForFreeShipping,
