@@ -209,9 +209,7 @@ export const CatalogApi = {
     return PROMO_OFFERS.filter((p) => p.active);
   },
 
-  /**
-   * Submit Order to Backend (MongoDB) and save locally for admin view
-   */
+  /** Submit an order and save it locally for the admin dashboard. */
   async submitOrder(order: OrderPayload): Promise<{ success: boolean; orderId: string; message: string }> {
     const orderId = order.orderId || `VEL-${Math.floor(1000 + Math.random() * 9000)}`;
     const fullOrder: CustomerOrder = {

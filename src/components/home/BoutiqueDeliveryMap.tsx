@@ -162,4 +162,3 @@ export const BoutiqueDeliveryMap: React.FC = () => {
     </section>
   );
 };
-

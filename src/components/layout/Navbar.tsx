@@ -63,14 +63,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
       <header
         className={`sticky top-0 z-40 transition-all duration-300 ${
           isScrolled
-            ? 'bg-cream/90 backdrop-blur-xl shadow-md border-b border-stone-300/80 py-2 sm:py-3'
-            : 'bg-cream/75 backdrop-blur-md border-b border-stone-300/50 py-3 sm:py-4'
+            ? 'bg-cream/95 backdrop-blur-xl shadow-md border-b border-stone-300/80 py-1.5 sm:py-2'
+            : 'bg-cream/90 backdrop-blur-md border-b border-stone-300/50 py-2 sm:py-3'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative flex items-center justify-between min-h-[64px] sm:min-h-[80px] md:min-h-[92px]">
           
           {/* Mobile Hamburger Toggle (Android/iOS) */}
-          <div className="flex items-center lg:hidden">
+          <div className="flex items-center lg:hidden z-30">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 -ml-2 rounded-full text-botanical-950 hover:bg-stone-200/60 focus:outline-none"
@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
           </div>
 
           {/* Left Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-bold uppercase tracking-[0.18em] text-stone-700">
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-xs font-bold uppercase tracking-[0.16em] text-stone-700 flex-1 justify-start z-10 pr-24 xl:pr-32">
             <button
               onClick={() => scrollTo('hero-parallax')}
               className="hover:text-clay transition-colors uppercase tracking-wider"
@@ -114,17 +114,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigateToAdmin }) => {
             </button>
           </nav>
 
-          {/* Center Brand Logo */}
-          <div onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <BrandLogo size="md" variant="dark" />
+          {/* Center Brand Logo (Always perfectly centered on viewport) */}
+          <div
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-20 cursor-pointer transition-transform duration-300 hover:scale-105"
+            title="VELORA - Torna a inizio pagina"
+          >
+            <BrandLogo size={isScrolled ? 'sm' : 'md'} variant="dark" />
           </div>
 
           {/* Right Actions: Store Address Pill + Admin + Cart Trigger */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1 z-30 pl-24 xl:pl-32">
             {/* Quick Navigation to Boutique Pill */}
             <button
               onClick={() => scrollTo('bottega-mappa')}
-              className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-full bg-white/90 border border-stone-300 text-botanical-900 hover:bg-botanical-900 hover:text-white transition-all shadow-sm group"
+              className="hidden xl:inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-full bg-white/90 border border-stone-300 text-botanical-900 hover:bg-botanical-900 hover:text-white transition-all shadow-sm group"
               title="Vedi Bottega e indicazioni a Tor Lupara"
             >
               <MapPin className="w-3.5 h-3.5 text-clay group-hover:text-petal transition-colors" />

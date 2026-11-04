@@ -17,7 +17,7 @@ export const Footer: React.FC = () => {
           {/* Brand Presentation */}
           <div className="lg:col-span-5 space-y-4">
             <div className="inline-block">
-              <BrandLogo size="md" variant="light" />
+              <BrandLogo size="lg" variant="light" />
             </div>
             <p className="text-xs text-stone-300 max-w-md leading-relaxed pt-2">
               Atelier botanico d'autore. Creiamo bouquet sartoriali freschi ogni mattina, selezioniamo piante rare invasate a mano in terrecotte e realizziamo composizioni di cordoglio solenni con consegna espressa in <strong>tutta Roma</strong>.

@@ -98,6 +98,7 @@ export const AnnouncementBarEditor: React.FC = () => {
               applyPreset({
                 badge: 'VELORA:',
                 message: 'Consegna espressa a mano garantita in tutta Roma dalla nostra bottega di Tor Lupara',
+                secondary: '✨ Consegna Gratuita sopra 50,00 € • 💌 Biglietto a mano incluso',
                 secondary: '🚚 Mezzo refrigerato a domicilio • 💌 Biglietto a mano incluso',
                 specialEvent: 'standard',
               })

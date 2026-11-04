@@ -31,7 +31,6 @@ import {
   MessageCircle,
   UserCheck,
   RefreshCw,
-  ExternalLink,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -265,7 +264,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
 
         <div className="max-w-md w-full bg-white rounded-[2.5rem] p-7 sm:p-10 shadow-2xl border border-stone-200 space-y-6">
           <div className="text-center space-y-2">
-            <BrandLogo size="md" variant="dark" />
+            <BrandLogo size="lg" variant="dark" />
             <div className="pt-3">
               <span className="px-3 py-1 rounded-full bg-botanical-950 text-petal text-[10px] font-bold uppercase tracking-[0.25em]">
                 Pannello Riservato Fiorista
