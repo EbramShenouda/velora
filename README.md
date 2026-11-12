@@ -128,6 +128,10 @@ VITE_CLOUDINARY_UPLOAD_PRESET="velora_catalog"
 - Preview reattiva del nastro in raso color crema con caratteri in lamina d'oro (max 45 caratteri).
 - Selezione del luogo di celebrazione (Chiesa, Camera Ardente, Cimitero, Domicilio) e orario della funzione con passaggio diretto al carrello.
 
+### 4. Carrello Avanzato e Checkout WhatsApp (`CartDrawer.tsx`)
+- Barra animata con percentuale dinamica per la **spedizione gratuita sopra i 50,00 €**.
+- Anteprima calligrafica in tempo reale del biglietto d'auguri su cartoncino avorio.
+- Generatore di ordine diretto via **WhatsApp Business** con riepilogo formattato in markdown con emoji e totali per consegna in tutta Roma.
 ### 4. Carrello Avanzato e Checkout WhatsApp Reale (`CartDrawer.tsx`)
 - Dedica bigliettino d'auguri pulita con campo testuale essenziale (valore iniziale vuoto).
 - Validazione in tempo reale di tutti i campi obbligatori (Nome, Telefono, Indirizzo o Ritiro in Bottega).

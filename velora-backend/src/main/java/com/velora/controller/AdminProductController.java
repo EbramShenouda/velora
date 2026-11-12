@@ -29,7 +29,6 @@ public class AdminProductController {
 
     public AdminProductController(ProductRepository productRepository,
                                   StoreSettingsRepository settingsRepository,
-                                  OrderRepository orderRepository) {
                                   OrderRepository orderRepository,
                                   UserRepository userRepository,
                                   PasswordEncoder passwordEncoder) {

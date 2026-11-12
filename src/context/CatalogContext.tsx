@@ -115,6 +115,12 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (e) {}
   }, [orders]);
 
+  // Initial data synchronization with backend MongoDB on app startup (all devices & domains)
+  useEffect(() => {
+    refreshCatalog();
+    refreshOrders();
+  }, []);
+
   const refreshOrders = async () => {
     try {
       const list = await CatalogApi.getOrders();
@@ -169,12 +175,31 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsLoading(true);
     try {
       if (!siteConfig.api.useMock) {
-        const [prods, promos] = await Promise.all([
+        const [prods, promos, remoteSettings] = await Promise.all([
           CatalogApi.getProducts(activeCategory),
           CatalogApi.getActivePromos(),
+          CatalogApi.getSettings(),
         ]);
-        if (prods && prods.length > 0) setProducts(prods);
-        if (promos && promos.length > 0) setPromoOffers(promos);
+        if (prods && Array.isArray(prods) && prods.length > 0) {
+          setProducts(prods);
+        }
+        if (promos && Array.isArray(promos) && promos.length > 0) {
+          setPromoOffers(promos);
+        }
+        if (remoteSettings) {
+          if (remoteSettings.announcement) {
+            setAnnouncement((prev) => ({ ...prev, ...remoteSettings.announcement }));
+          }
+          if (remoteSettings.standardShippingFee !== undefined || remoteSettings.freeShippingThreshold !== undefined) {
+            setDeliverySettings((prev) => ({
+              ...prev,
+              standardShippingFee: remoteSettings.standardShippingFee ?? prev.standardShippingFee,
+              freeShippingEnabled: remoteSettings.freeShippingEnabled ?? prev.freeShippingEnabled,
+              freeShippingThreshold: remoteSettings.freeShippingThreshold ?? prev.freeShippingThreshold,
+              deliveryArea: remoteSettings.deliveryArea ?? prev.deliveryArea,
+            }));
+          }
+        }
       }
     } catch (err) {
       console.error('Error refreshing catalog:', err);

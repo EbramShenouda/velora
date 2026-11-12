@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useCatalog } from '../../context/CatalogContext';
 import { useCart } from '../../context/CartContext';
 import { siteConfig } from '../../config/siteConfig';
@@ -12,37 +12,69 @@ interface TributeOption {
   badge: string;
   desc: string;
   img: string;
+  stockQuantity?: number;
 }
 
 const TRIBUTES: TributeOption[] = [
   {
-    id: 'fun-1',
+    id: 'p6',
     name: 'Cuscino Floreale "Candore"',
     price: 95,
     badge: 'Nastro Oro Incluso',
     desc: 'Rose bianche avalanche, lilium orientali candidi, lisianthus e fronde nobili su spugna bagnata.',
     img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80',
+    stockQuantity: 10,
   },
   {
-    id: 'fun-2',
+    id: 'p7',
     name: 'Corona su Cavalletto "Eternità"',
     price: 165,
     badge: 'Alta Cerimonia',
     desc: 'Grande corona circolare lavorata a mano con orchidee bianche, rose crema e rami di ulivo.',
     img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80',
+    stockQuantity: 6,
   },
 ];
 
 export const FuneralConfigurator: React.FC = () => {
-  const { setIsSolemnMode } = useCatalog();
+  const { products, setIsSolemnMode } = useCatalog();
   const { addFuneralTributeToCart } = useCart();
   const sectionRef = useRef<HTMLElement>(null);
 
-  const [selectedTribute, setSelectedTribute] = useState<TributeOption>(TRIBUTES[0]);
+  // Dynamically load funeral tributes from the shared catalog context so changes in Admin are reflected here
+  const availableTributes: TributeOption[] = useMemo(() => {
+    const list = products.filter((p) => p.category === 'funebre' || p.isFuneralTribute);
+    if (list.length > 0) {
+      return list.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        badge: p.badge || 'Arte Funebre',
+        desc: p.desc,
+        img: p.imageUrl || p.img,
+        stockQuantity: p.stockQuantity,
+      }));
+    }
+    return TRIBUTES;
+  }, [products]);
+
+  const [selectedTribute, setSelectedTribute] = useState<TributeOption>(availableTributes[0] || TRIBUTES[0]);
   const [ribbonText, setRibbonText] = useState<string>('Con profondo affetto e stima, Famiglia Rossi');
   const [venueType, setVenueType] = useState<FuneralConfig['venueType']>('Chiesa / Parrocchia');
   const [ceremonyTime, setCeremonyTime] = useState<FuneralConfig['ceremonyTime']>('Entro le ore 09:30');
   const [venueDetail, setVenueDetail] = useState<string>('Chiesa di Santa Maria in Trastevere');
+
+  // Keep selectedTribute in sync when availableTributes updates from Admin
+  useEffect(() => {
+    if (availableTributes.length > 0) {
+      const match = availableTributes.find((t) => t.id === selectedTribute.id);
+      if (match) {
+        setSelectedTribute(match);
+      } else {
+        setSelectedTribute(availableTributes[0]);
+      }
+    }
+  }, [availableTributes]);
 
   // Trigger solemn lighting mode when section enters view
   useEffect(() => {
@@ -110,14 +142,17 @@ export const FuneralConfigurator: React.FC = () => {
           
           {/* Left Column: Tributes Selection Cards */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {TRIBUTES.map((tribute) => {
+            {availableTributes.map((tribute) => {
               const isSelected = selectedTribute.id === tribute.id;
+              const isOutOfStock = tribute.stockQuantity !== undefined && tribute.stockQuantity <= 0;
               return (
                 <div
                   key={tribute.id}
-                  onClick={() => setSelectedTribute(tribute)}
+                  onClick={() => !isOutOfStock && setSelectedTribute(tribute)}
                   className={`bg-stone-900/90 rounded-3xl p-5 border transition-all duration-300 shadow-xl flex flex-col justify-between cursor-pointer ${
-                    isSelected
+                    isOutOfStock
+                      ? 'opacity-60 cursor-not-allowed border-stone-800'
+                      : isSelected
                       ? 'border-amber-400/80 ring-2 ring-amber-400/20'
                       : 'border-stone-700/80 hover:border-stone-500'
                   }`}
@@ -133,6 +168,11 @@ export const FuneralConfigurator: React.FC = () => {
                       <span className="absolute top-3 left-3 bg-black/80 text-stone-200 text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full border border-white/20">
                         {tribute.badge}
                       </span>
+                      {isOutOfStock && (
+                        <span className="absolute top-3 right-3 bg-rose-600 text-white text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-full shadow-lg">
+                          Esaurito
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="font-serif text-2xl text-white font-semibold">
@@ -149,17 +189,20 @@ export const FuneralConfigurator: React.FC = () => {
                     </span>
                     <button
                       type="button"
+                      disabled={isOutOfStock}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedTribute(tribute);
+                        if (!isOutOfStock) setSelectedTribute(tribute);
                       }}
                       className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
-                        isSelected
+                        isOutOfStock
+                          ? 'bg-stone-800 text-stone-500 cursor-not-allowed'
+                          : isSelected
                           ? 'bg-amber-400 text-stone-950 shadow-lg'
                           : 'bg-white/10 hover:bg-white text-white hover:text-stone-950'
                       }`}
                     >
-                      {isSelected ? '✓ Selezionato' : 'Scegli Omaggio'}
+                      {isOutOfStock ? 'Esaurito' : isSelected ? '✓ Selezionato' : 'Scegli Omaggio'}
                     </button>
                   </div>
                 </div>
