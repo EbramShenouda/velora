@@ -1,5 +1,7 @@
 package com.velora.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,13 +18,19 @@ public class Product {
     private String badge;
     private double price;
     private Double originalPrice;
+    @JsonProperty("isPromo")
+    @JsonAlias({"promo", "isPromo"})
     private boolean isPromo;
     private Integer promoDiscountPct;
     private int stockQuantity;
     private String desc;
     private String dimensions;
     private String img;
+    @JsonProperty("isFeatured")
+    @JsonAlias({"featured", "isFeatured"})
     private boolean isFeatured;
+    @JsonProperty("isFuneralTribute")
+    @JsonAlias({"funeralTribute", "isFuneralTribute"})
     private boolean isFuneralTribute;
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
@@ -72,7 +80,10 @@ public class Product {
     public Double getOriginalPrice() { return originalPrice; }
     public void setOriginalPrice(Double originalPrice) { this.originalPrice = originalPrice; }
 
+    @JsonProperty("isPromo")
     public boolean isPromo() { return isPromo; }
+    @JsonProperty("isPromo")
+    @JsonAlias({"promo", "isPromo"})
     public void setPromo(boolean promo) { isPromo = promo; }
 
     public Integer getPromoDiscountPct() { return promoDiscountPct; }
@@ -97,10 +108,16 @@ public class Product {
         }
     }
 
+    @JsonProperty("isFeatured")
     public boolean isFeatured() { return isFeatured; }
+    @JsonProperty("isFeatured")
+    @JsonAlias({"featured", "isFeatured"})
     public void setFeatured(boolean featured) { isFeatured = featured; }
 
+    @JsonProperty("isFuneralTribute")
     public boolean isFuneralTribute() { return isFuneralTribute; }
+    @JsonProperty("isFuneralTribute")
+    @JsonAlias({"funeralTribute", "isFuneralTribute"})
     public void setFuneralTribute(boolean funeralTribute) { isFuneralTribute = funeralTribute; }
 
     public Instant getCreatedAt() { return createdAt; }

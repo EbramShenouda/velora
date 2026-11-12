@@ -81,13 +81,14 @@ export const siteConfig: SiteConfig = {
     standardShippingFee: parseEnvNumber(import.meta.env.VITE_STANDARD_DELIVERY_FEE, 5.0),
   },
   api: {
-    baseUrl: (
-      import.meta.env.VITE_API_BASE_URL ||
-      (import.meta.env.VITE_API_URL
-        ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}${import.meta.env.VITE_API_URL.endsWith('/api') ? '' : '/api'}`
-        : '') ||
-      'http://localhost:8080/api'
-    ),
-    useMock: import.meta.env.VITE_USE_MOCK_API === 'true',
+    baseUrl: (() => {
+      const rawUrl =
+        import.meta.env.VITE_API_BASE_URL ||
+        import.meta.env.VITE_API_URL ||
+        'https://velora-jsf6.onrender.com';
+      const trimmed = rawUrl.replace(/\/+$/, '');
+      return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+    })(),
+    useMock: false,
   },
 };

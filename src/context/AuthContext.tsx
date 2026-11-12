@@ -40,17 +40,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      if (!localStorage.getItem(ADMIN_CREDS_KEY)) {
-        localStorage.setItem(
-          ADMIN_CREDS_KEY,
-          JSON.stringify({ username: 'admin', password: 'velora2026!' })
-        );
+    const initAuth = async () => {
+      try {
+        if (!localStorage.getItem(ADMIN_CREDS_KEY)) {
+          localStorage.setItem(
+            ADMIN_CREDS_KEY,
+            JSON.stringify({ username: 'admin', password: 'velora2026!' })
+          );
+        }
+
+        // If browser has a leftover offline 'mock.' token, automatically upgrade it to a real backend JWT
+        const currentToken = localStorage.getItem(TOKEN_KEY);
+        if (!siteConfig.api.useMock && currentToken && currentToken.startsWith('mock.')) {
+          const savedCredsStr = localStorage.getItem(ADMIN_CREDS_KEY);
+          const creds = savedCredsStr
+            ? JSON.parse(savedCredsStr)
+            : { username: 'admin', password: 'velora2026!' };
+
+          try {
+            const res = await fetch(`${siteConfig.api.baseUrl}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: creds.username, password: creds.password }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const realJwt = data.token || data.accessToken;
+              if (realJwt) {
+                setToken(realJwt);
+                localStorage.setItem(TOKEN_KEY, realJwt);
+                setIsLoading(false);
+                return;
+              }
+            }
+          } catch {
+            // Backend unreachable during init
+          }
+          // Discard invalid mock token so user logs in cleanly against backend
+          setToken(null);
+          setUser(null);
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+        }
+      } catch {
+        // Local storage may be unavailable in private browsing contexts.
       }
-    } catch {
-      // Local storage may be unavailable in private browsing contexts.
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (username: string, password: string) => {
@@ -59,13 +97,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const response = await fetch(`${siteConfig.api.baseUrl}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username: username.trim(), password }),
         });
 
         if (response.ok) {
           const data = await response.json();
           const authUser: User = {
-            username: data.username || username,
+            username: data.username || username.trim(),
             role: data.role || 'ADMIN',
             storeName: siteConfig.brand.name,
           };
@@ -75,6 +113,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(authUser);
           localStorage.setItem(TOKEN_KEY, jwtToken);
           localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+          localStorage.setItem(
+            ADMIN_CREDS_KEY,
+            JSON.stringify({ username: username.trim(), password })
+          );
           return { success: true };
         }
 

@@ -165,26 +165,100 @@ export const PROMO_OFFERS: PromoOffer[] = [
   },
 ];
 
+const TOKEN_KEY = 'velora_jwt_token';
+const ADMIN_CREDS_KEY = 'velora_admin_creds_v1';
+
+/**
+ * Ensures a valid, non-mock JWT token is available for admin requests,
+ * automatically refreshing against /api/auth/login when needed.
+ */
+export async function ensureAdminJwtToken(forceRefresh = false): Promise<string | null> {
+  let token = localStorage.getItem(TOKEN_KEY);
+  if (!forceRefresh && token && !token.startsWith('mock.')) {
+    return token;
+  }
+
+  try {
+    const savedCredsStr = localStorage.getItem(ADMIN_CREDS_KEY);
+    const creds = savedCredsStr
+      ? JSON.parse(savedCredsStr)
+      : { username: 'admin', password: 'velora2026!' };
+
+    const res = await fetch(`${siteConfig.api.baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: creds.username, password: creds.password }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const freshJwt = data.token || data.accessToken;
+      if (freshJwt) {
+        localStorage.setItem(TOKEN_KEY, freshJwt);
+        return freshJwt;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not refresh admin JWT token:', err);
+  }
+
+  return token;
+}
+
+/**
+ * Performs an authenticated admin fetch against the Spring Boot backend,
+ * automatically retrying with a fresh JWT if 401/403 occurs.
+ */
+export async function adminFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  let token = await ensureAdminJwtToken(false);
+  const url = `${siteConfig.api.baseUrl}${endpoint}`;
+
+  const buildHeaders = (jwt: string | null): HeadersInit => ({
+    ...(options.headers || {}),
+    ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+  });
+
+  let res = await fetch(url, {
+    ...options,
+    headers: buildHeaders(token),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    token = await ensureAdminJwtToken(true);
+    if (token && !token.startsWith('mock.')) {
+      res = await fetch(url, {
+        ...options,
+        headers: buildHeaders(token),
+      });
+    }
+  }
+
+  return res;
+}
+
 /**
  * Abstract Catalog API Layer
  */
 export const CatalogApi = {
   /**
-   * Fetch catalog products with optional filtering
+   * Fetch catalog products with optional filtering.
+   * Returns Product[] from server (even if empty []), or null if backend is unreachable.
    */
-  async getProducts(category?: string): Promise<Product[]> {
+  async getProducts(category?: string): Promise<Product[] | null> {
     if (!siteConfig.api.useMock) {
       try {
         const url = category && category !== 'all'
           ? `${siteConfig.api.baseUrl}/products?category=${category}`
           : `${siteConfig.api.baseUrl}/products`;
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
-          return await res.json();
+          const data: Product[] = await res.json();
+          return Array.isArray(data) ? data : null;
         }
       } catch (err) {
-        console.warn('API fetch failed, falling back to local dataset:', err);
+        console.warn('API fetch failed, keeping local dataset:', err);
       }
+      return null;
     }
 
     // Local mock behavior
@@ -266,10 +340,7 @@ export const CatalogApi = {
     const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
     if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        const res = await fetch(`${siteConfig.api.baseUrl}/admin/orders`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const res = await adminFetch('/admin/orders', { cache: 'no-store' });
         if (res.ok) {
           return await res.json();
         }
@@ -301,12 +372,10 @@ export const CatalogApi = {
 
     if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        await fetch(`${siteConfig.api.baseUrl}/admin/orders/${orderId}/status`, {
+        await adminFetch(`/admin/orders/${orderId}/status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify({ status }),
         });
@@ -324,7 +393,7 @@ export const CatalogApi = {
   async getSettings(): Promise<Partial<StoreSettings> | null> {
     if (!siteConfig.api.useMock) {
       try {
-        const res = await fetch(`${siteConfig.api.baseUrl}/settings`);
+        const res = await fetch(`${siteConfig.api.baseUrl}/settings`, { cache: 'no-store' });
         if (res.ok) {
           return await res.json();
         }
@@ -341,12 +410,10 @@ export const CatalogApi = {
   async updateSettings(settings: Partial<StoreSettings>): Promise<boolean> {
     if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        const res = await fetch(`${siteConfig.api.baseUrl}/admin/settings`, {
+        const res = await adminFetch('/admin/settings', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify(settings),
         });

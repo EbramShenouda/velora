@@ -55,7 +55,7 @@ public class AdminProductController {
     }
 
     /**
-     * PUT /api/admin/products/{id} - Update existing product
+     * PUT /api/admin/products/{id} - Update existing product (or upsert if not found)
      */
     @PutMapping("/products/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable String id, @RequestBody Product updates) {
@@ -75,24 +75,45 @@ public class AdminProductController {
                             ? updates.getImageUrl() 
                             : updates.getImg();
                     existing.setImg(newImg);
+                    existing.setFuneralTribute("funebre".equalsIgnoreCase(updates.getCategory()) || updates.isFuneralTribute());
                     existing.setUpdatedAt(Instant.now());
 
                     Product saved = productRepository.save(existing);
                     return ResponseEntity.ok(saved);
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() -> {
+                    updates.setId(id);
+                    if (updates.getSlug() == null || updates.getSlug().isBlank()) {
+                        updates.setSlug(updates.getName() != null
+                                ? updates.getName().toLowerCase().replaceAll("[^a-z0-9]+", "-")
+                                : id);
+                    }
+                    updates.setUpdatedAt(Instant.now());
+                    Product saved = productRepository.save(updates);
+                    return ResponseEntity.ok(saved);
+                });
     }
 
     /**
-     * DELETE /api/admin/products/{id} - Delete product from catalog
+     * DELETE /api/admin/products/{id} - Permanently delete product from MongoDB catalog
      */
     @DeleteMapping("/products/{id}")
     public ResponseEntity<?> deleteProduct(@PathVariable String id) {
-        if (productRepository.existsById(id)) {
-            productRepository.deleteById(id);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Prodotto eliminato con successo."));
-        }
-        return ResponseEntity.notFound().build();
+        productRepository.deleteById(id);
+
+        // Ensure catalogInitialized flag is true so deleted items are never re-seeded on restart
+        settingsRepository.findById("store_config").ifPresent(settings -> {
+            if (!settings.isCatalogInitialized()) {
+                settings.setCatalogInitialized(true);
+                settingsRepository.save(settings);
+            }
+        });
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "id", id,
+                "message", "Prodotto eliminato definitivamente da MongoDB."
+        ));
     }
 
     /**

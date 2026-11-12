@@ -5,7 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, PromoOffer, CategoryId, AnnouncementConfig, DeliverySettings, CustomerOrder } from '../types/catalog';
-import { CatalogApi, INITIAL_PRODUCTS, PROMO_OFFERS } from '../services/api';
+import { CatalogApi, INITIAL_PRODUCTS, PROMO_OFFERS, adminFetch } from '../services/api';
 import { siteConfig } from '../config/siteConfig';
 
 interface CatalogContextType {
@@ -37,7 +37,7 @@ interface CatalogContextType {
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 
-const LOCAL_PRODUCTS_KEY = 'velora_custom_products_v1';
+const LOCAL_PRODUCTS_KEY = 'velora_custom_products_v2';
 const LOCAL_ANNOUNCEMENT_KEY = 'velora_announcement_v1';
 const LOCAL_DELIVERY_KEY = 'velora_delivery_settings_v1';
 const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
@@ -176,12 +176,16 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       if (!siteConfig.api.useMock) {
         const [prods, promos, remoteSettings] = await Promise.all([
-          CatalogApi.getProducts(activeCategory),
+          CatalogApi.getProducts('all'),
           CatalogApi.getActivePromos(),
           CatalogApi.getSettings(),
         ]);
-        if (prods && Array.isArray(prods) && prods.length > 0) {
+        // Update state whenever backend returns an array (even if empty [] when all items are deleted!)
+        if (prods !== null && Array.isArray(prods)) {
           setProducts(prods);
+          try {
+            localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(prods));
+          } catch {}
         }
         if (promos && Array.isArray(promos) && promos.length > 0) {
           setPromoOffers(promos);
@@ -226,20 +230,29 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       slug: newProdData.slug || newProdData.name.toLowerCase().replace(/\s+/g, '-'),
       img: finalImg,
       imageUrl: finalImg,
+      isFuneralTribute: newProdData.category === 'funebre' || !!newProdData.isFuneralTribute,
     };
 
-    // If backend is active, send to Spring Boot endpoint
     if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        await fetch(`${siteConfig.api.baseUrl}/admin/products`, {
+        const res = await adminFetch('/admin/products', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify(product),
         });
+        if (res.ok) {
+          const savedFromDb: Product = await res.json();
+          const normalized: Product = {
+            ...product,
+            ...savedFromDb,
+            img: savedFromDb.imageUrl || savedFromDb.img || finalImg,
+            imageUrl: savedFromDb.imageUrl || savedFromDb.img || finalImg,
+          };
+          setProducts((prev) => [normalized, ...prev]);
+          return normalized;
+        }
       } catch (e) {
         console.warn('Backend product creation failed, saved locally:', e);
       }
@@ -250,40 +263,53 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {
-    let updatedProduct: Product | undefined;
-    const finalImg = updates.imageUrl !== undefined ? updates.imageUrl : (updates.img !== undefined ? updates.img : undefined);
+    const existing = products.find((p) => p.id === id);
+    if (!existing) throw new Error('Product not found');
 
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          updatedProduct = {
-            ...p,
-            ...updates,
-            ...(finalImg !== undefined ? { img: finalImg, imageUrl: finalImg } : {}),
-          };
-          return updatedProduct;
-        }
-        return p;
-      })
-    );
+    const finalImg =
+      updates.imageUrl !== undefined
+        ? updates.imageUrl
+        : updates.img !== undefined
+        ? updates.img
+        : existing.imageUrl || existing.img;
 
-    if (!siteConfig.api.useMock && updatedProduct) {
+    const updatedProduct: Product = {
+      ...existing,
+      ...updates,
+      img: finalImg,
+      imageUrl: finalImg,
+      isFuneralTribute:
+        (updates.category || existing.category) === 'funebre' ||
+        !!(updates.isFuneralTribute ?? existing.isFuneralTribute),
+    };
+
+    setProducts((prev) => prev.map((p) => (p.id === id ? updatedProduct : p)));
+
+    if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        await fetch(`${siteConfig.api.baseUrl}/admin/products/${id}`, {
+        const res = await adminFetch(`/admin/products/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify(updatedProduct),
         });
+        if (res.ok) {
+          const savedFromDb: Product = await res.json();
+          const normalized: Product = {
+            ...updatedProduct,
+            ...savedFromDb,
+            img: savedFromDb.imageUrl || savedFromDb.img || finalImg,
+            imageUrl: savedFromDb.imageUrl || savedFromDb.img || finalImg,
+          };
+          setProducts((prev) => prev.map((p) => (p.id === id ? normalized : p)));
+          return normalized;
+        }
       } catch (e) {
         console.warn('Backend product update failed, saved locally:', e);
       }
     }
 
-    if (!updatedProduct) throw new Error('Product not found');
     return updatedProduct;
   };
 
@@ -292,12 +318,8 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        await fetch(`${siteConfig.api.baseUrl}/admin/products/${id}`, {
+        await adminFetch(`/admin/products/${id}`, {
           method: 'DELETE',
-          headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-          },
         });
       } catch (e) {
         console.warn('Backend delete failed, updated locally:', e);
@@ -354,12 +376,10 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (!siteConfig.api.useMock) {
       try {
-        const token = localStorage.getItem('velora_jwt_token');
-        fetch(`${siteConfig.api.baseUrl}/admin/settings`, {
+        adminFetch('/admin/settings', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify({ announcement: { ...announcement, ...config } }),
         }).catch((e) => console.warn(e));

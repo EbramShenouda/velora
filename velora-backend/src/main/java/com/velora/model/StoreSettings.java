@@ -17,6 +17,7 @@ public class StoreSettings {
     private double freeShippingThreshold = 50.0;
     private boolean freeShippingEnabled = false;
     private double standardDeliveryFee = 5.0;
+    private boolean catalogInitialized = false;
 
     // Dynamic Announcement Bar
     private Announcement announcement = new Announcement();
@@ -73,6 +74,16 @@ public class StoreSettings {
 
     public double getStandardDeliveryFee() { return standardDeliveryFee; }
     public void setStandardDeliveryFee(double standardDeliveryFee) { this.standardDeliveryFee = standardDeliveryFee; }
+
+    public double getStandardShippingFee() { return standardDeliveryFee; }
+    public void setStandardShippingFee(Double standardShippingFee) {
+        if (standardShippingFee != null) {
+            this.standardDeliveryFee = standardShippingFee;
+        }
+    }
+
+    public boolean isCatalogInitialized() { return catalogInitialized; }
+    public void setCatalogInitialized(boolean catalogInitialized) { this.catalogInitialized = catalogInitialized; }
 
     public Announcement getAnnouncement() { return announcement; }
     public void setAnnouncement(Announcement announcement) { this.announcement = announcement; }

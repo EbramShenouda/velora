@@ -28,17 +28,19 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
+            String cleanUser = loginRequest.getUsername() != null ? loginRequest.getUsername().trim() : "";
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
+                            cleanUser,
                             loginRequest.getPassword()
                     )
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String jwt = tokenProvider.generateToken(loginRequest.getUsername(), "ADMIN");
-            return ResponseEntity.ok(new LoginResponse(jwt, loginRequest.getUsername(), "ADMIN"));
+            String canonicalUsername = authentication.getName();
+            String jwt = tokenProvider.generateToken(canonicalUsername, "ADMIN");
+            return ResponseEntity.ok(new LoginResponse(jwt, canonicalUsername, "ADMIN"));
         } catch (Exception ex) {
             return ResponseEntity.status(401).body(Map.of("message", "Credenziali errate. Verifica username e password/PIN."));
         }
