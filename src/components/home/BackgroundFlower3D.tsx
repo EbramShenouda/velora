@@ -294,24 +294,6 @@ export const BackgroundFlower3D: React.FC<BackgroundFlower3DProps> = ({ classNam
         aria-hidden="true"
         className={`fixed inset-0 w-screen h-screen z-0 pointer-events-none transition-filter duration-700 ${className}`}
       />
-
-      {/* Floating Bottom-Left Pink Rose Status Pill */}
-      <div className="fixed bottom-5 left-5 z-30 pointer-events-auto select-none">
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-botanical-950/85 backdrop-blur-xl border border-white/15 text-white shadow-2xl text-xs">
-          <span
-            className={`w-2.5 h-2.5 rounded-full animate-pulse ${
-              isSolemnMode ? 'bg-stone-300' : 'bg-pink-400'
-            }`}
-          />
-          <span
-            className={`hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-semibold ${
-              isSolemnMode ? 'bg-white/20 text-stone-200' : 'bg-pink-900/60 text-pink-200 border border-pink-400/30'
-            }`}
-          >
-            {isSolemnMode ? 'Luce Argentea' : 'Rosa Botanica'}
-          </span>
-        </div>
-      </div>
     </>
   );
 };

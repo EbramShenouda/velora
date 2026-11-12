@@ -8,6 +8,7 @@ import { BoutiqueDeliveryMap } from '../components/home/BoutiqueDeliveryMap';
 import { FuneralConfigurator } from '../components/home/FuneralConfigurator';
 import { Footer } from '../components/layout/Footer';
 import { CartDrawer } from '../components/home/CartDrawer';
+import { WhatsAppRoseButton } from '../components/home/WhatsAppRoseButton';
 
 interface HomePageProps {
   onNavigateToAdmin?: () => void;
@@ -45,6 +46,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToAdmin }) => {
 
       {/* 4. Slide-over Shopping Cart Drawer */}
       <CartDrawer />
+
+      {/* 5. Fixed WhatsApp rose: always visible while scrolling */}
+      <WhatsAppRoseButton />
     </div>
   );
 };
