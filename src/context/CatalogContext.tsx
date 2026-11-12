@@ -1,16 +1,34 @@
 /**
  * VELORA - CatalogContext
- * State management for Products, Filters, Promos, Dynamic Announcement Bar, and 3D Visual Mood
+ * State management for Products, Filters, Promos, Dynamic Announcement Bar, and 3D Visual Mood.
+ * Connected exclusively to Spring Boot + MongoDB (${import.meta.env.VITE_API_URL}/api/...).
+ * Zero localStorage fallback for catalog products.
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, PromoOffer, CategoryId, AnnouncementConfig, DeliverySettings, CustomerOrder } from '../types/catalog';
-import { CatalogApi, INITIAL_PRODUCTS, PROMO_OFFERS, adminFetch } from '../services/api';
+import {
+  Product,
+  PromoOffer,
+  CategoryId,
+  AnnouncementConfig,
+  DeliverySettings,
+  CustomerOrder,
+} from '../types/catalog';
+import {
+  CatalogApi,
+  PROMO_OFFERS,
+  fetchProducts,
+  createProduct as apiCreateProduct,
+  updateProduct as apiUpdateProduct,
+  deleteProduct as apiDeleteProduct,
+} from '../services/api';
 import { siteConfig } from '../config/siteConfig';
 
 interface CatalogContextType {
   products: Product[];
+  allProducts: Product[];
   isLoading: boolean;
+  catalogError: string | null;
   activeCategory: CategoryId;
   promoOffers: PromoOffer[];
   activePromo: PromoOffer | null;
@@ -24,23 +42,23 @@ interface CatalogContextType {
   getProductById: (id: string) => Product | undefined;
   refreshCatalog: () => Promise<void>;
   refreshOrders: () => Promise<void>;
-  // CRUD actions for Admin
+  // CRUD actions for Admin (persisted exclusively on MongoDB)
   addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<Product>;
   deleteProduct: (id: string) => Promise<boolean>;
   toggleStock: (id: string) => Promise<void>;
-  toggleOffer: (id: string, isPromo: boolean, discountPrice?: number, discountPct?: number) => Promise<void>;
+  toggleOffer: (
+    id: string,
+    isPromo: boolean,
+    discountPrice?: number,
+    discountPct?: number
+  ) => Promise<void>;
   updateAnnouncement: (config: Partial<AnnouncementConfig>) => void;
   updateDeliverySettings: (settings: Partial<DeliverySettings>) => Promise<void>;
   updateOrderStatus: (orderId: string, status: CustomerOrder['status']) => Promise<void>;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
-
-const LOCAL_PRODUCTS_KEY = 'velora_custom_products_v2';
-const LOCAL_ANNOUNCEMENT_KEY = 'velora_announcement_v1';
-const LOCAL_DELIVERY_KEY = 'velora_delivery_settings_v1';
-const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
 
 const DEFAULT_ANNOUNCEMENT: AnnouncementConfig = {
   message: 'Consegna espressa a mano garantita in tutta Roma dalla nostra bottega',
@@ -51,162 +69,97 @@ const DEFAULT_ANNOUNCEMENT: AnnouncementConfig = {
 };
 
 export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_PRODUCTS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Could not read products from localStorage', e);
-    }
-    return INITIAL_PRODUCTS;
-  });
-
-  const [promoOffers, setPromoOffers] = useState<PromoOffer[]>(PROMO_OFFERS);
+  // Strictly empty until loaded from MongoDB backend — zero localStorage or mock products
+  const [products, setProducts] = useState<Product[]>([]);
+  const [promoOffers] = useState<PromoOffer[]>(PROMO_OFFERS);
   const [activeCategory, setActiveCategory] = useState<CategoryId>('all');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [isSolemnMode, setIsSolemnMode] = useState<boolean>(false);
 
-  const [announcement, setAnnouncement] = useState<AnnouncementConfig>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_ANNOUNCEMENT_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Could not read announcement from localStorage', e);
-    }
-    return DEFAULT_ANNOUNCEMENT;
+  const [announcement, setAnnouncement] = useState<AnnouncementConfig>(DEFAULT_ANNOUNCEMENT);
+
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettings>({
+    standardShippingFee: siteConfig.delivery.standardShippingFee || 5.0,
+    freeShippingEnabled: false,
+    freeShippingThreshold: siteConfig.delivery.freeShippingThreshold || 50.0,
+    deliveryArea: siteConfig.delivery.area || 'tutta Roma',
   });
 
-  const [deliverySettings, setDeliverySettings] = useState<DeliverySettings>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_DELIVERY_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Could not read delivery settings from localStorage', e);
-    }
-    return {
-      standardShippingFee: siteConfig.delivery.standardShippingFee || 5.0,
-      freeShippingEnabled: false, // Default is false: delivery fee is NOT 0 by default, even over 50€
-      freeShippingThreshold: siteConfig.delivery.freeShippingThreshold || 50.0,
-      deliveryArea: siteConfig.delivery.area || 'tutta Roma',
-    };
-  });
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
 
-  const [orders, setOrders] = useState<CustomerOrder[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_ORDERS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Could not read orders from localStorage', e);
-    }
-    return [];
-  });
-
-  // Save delivery settings to local storage
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_DELIVERY_KEY, JSON.stringify(deliverySettings));
-    } catch (e) {}
-  }, [deliverySettings]);
-
-  // Save orders to local storage
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(orders));
-    } catch (e) {}
-  }, [orders]);
-
-  // Initial data synchronization with backend MongoDB on app startup (all devices & domains)
+  // Initial data synchronization with backend MongoDB on app startup
   useEffect(() => {
     refreshCatalog();
-    refreshOrders();
   }, []);
 
   const refreshOrders = async () => {
     try {
       const list = await CatalogApi.getOrders();
-      if (list && list.length >= 0) {
+      if (Array.isArray(list)) {
         setOrders(list);
       }
     } catch (err) {
-      console.warn('Failed to refresh orders:', err);
+      console.warn('Failed to refresh orders from MongoDB:', err);
     }
   };
 
   const updateDeliverySettings = async (settings: Partial<DeliverySettings>) => {
-    setDeliverySettings((prev) => {
-      const next = { ...prev, ...settings };
-      localStorage.setItem(LOCAL_DELIVERY_KEY, JSON.stringify(next));
-      return next;
-    });
+    const next: DeliverySettings = {
+      ...deliverySettings,
+      ...settings,
+    };
 
     await CatalogApi.updateSettings({
-      standardShippingFee: settings.standardShippingFee ?? deliverySettings.standardShippingFee,
-      freeShippingEnabled: settings.freeShippingEnabled ?? deliverySettings.freeShippingEnabled,
-      freeShippingThreshold: settings.freeShippingThreshold ?? deliverySettings.freeShippingThreshold,
-      deliveryArea: settings.deliveryArea ?? deliverySettings.deliveryArea,
+      standardDeliveryFee: next.standardShippingFee,
+      standardShippingFee: next.standardShippingFee,
+      freeShippingEnabled: next.freeShippingEnabled,
+      freeShippingThreshold: next.freeShippingThreshold,
+      deliveryArea: next.deliveryArea,
     });
+
+    setDeliverySettings(next);
   };
 
   const updateOrderStatus = async (orderId: string, status: CustomerOrder['status']) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.orderId === orderId ? { ...o, status } : o))
-    );
     await CatalogApi.updateOrderStatus(orderId, status);
+    setOrders((prev) => prev.map((o) => (o.orderId === orderId ? { ...o, status } : o)));
   };
-
-  // Save to local storage on changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(products));
-    } catch (e) {
-      console.warn('Failed saving products to localStorage', e);
-    }
-  }, [products]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_ANNOUNCEMENT_KEY, JSON.stringify(announcement));
-    } catch (e) {
-      console.warn('Failed saving announcement to localStorage', e);
-    }
-  }, [announcement]);
 
   const refreshCatalog = async () => {
     setIsLoading(true);
+    setCatalogError(null);
     try {
-      if (!siteConfig.api.useMock) {
-        const [prods, promos, remoteSettings] = await Promise.all([
-          CatalogApi.getProducts('all'),
-          CatalogApi.getActivePromos(),
-          CatalogApi.getSettings(),
-        ]);
-        // Update state whenever backend returns an array (even if empty [] when all items are deleted!)
-        if (prods !== null && Array.isArray(prods)) {
-          setProducts(prods);
-          try {
-            localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(prods));
-          } catch {}
+      const [prods, remoteSettings] = await Promise.all([
+        fetchProducts('all'),
+        CatalogApi.getSettings().catch(() => null),
+      ]);
+
+      setProducts(prods);
+
+      if (remoteSettings) {
+        if (remoteSettings.announcement) {
+          setAnnouncement((prev) => ({ ...prev, ...remoteSettings.announcement }));
         }
-        if (promos && Array.isArray(promos) && promos.length > 0) {
-          setPromoOffers(promos);
-        }
-        if (remoteSettings) {
-          if (remoteSettings.announcement) {
-            setAnnouncement((prev) => ({ ...prev, ...remoteSettings.announcement }));
-          }
-          if (remoteSettings.standardShippingFee !== undefined || remoteSettings.freeShippingThreshold !== undefined) {
-            setDeliverySettings((prev) => ({
-              ...prev,
-              standardShippingFee: remoteSettings.standardShippingFee ?? prev.standardShippingFee,
-              freeShippingEnabled: remoteSettings.freeShippingEnabled ?? prev.freeShippingEnabled,
-              freeShippingThreshold: remoteSettings.freeShippingThreshold ?? prev.freeShippingThreshold,
-              deliveryArea: remoteSettings.deliveryArea ?? prev.deliveryArea,
-            }));
-          }
+        const remoteFee =
+          (remoteSettings as any).standardDeliveryFee ?? remoteSettings.standardShippingFee;
+        if (remoteFee !== undefined || remoteSettings.freeShippingThreshold !== undefined) {
+          setDeliverySettings((prev) => ({
+            ...prev,
+            standardShippingFee: remoteFee ?? prev.standardShippingFee,
+            freeShippingEnabled: remoteSettings.freeShippingEnabled ?? prev.freeShippingEnabled,
+            freeShippingThreshold:
+              remoteSettings.freeShippingThreshold ?? prev.freeShippingThreshold,
+            deliveryArea: remoteSettings.deliveryArea ?? prev.deliveryArea,
+          }));
         }
       }
-    } catch (err) {
-      console.error('Error refreshing catalog:', err);
+    } catch (err: any) {
+      console.error('Error fetching catalog from MongoDB backend:', err);
+      setCatalogError(
+        err?.message ||
+          'Il server su Render si sta avviando (cold start) o non è raggiungibile. Riprova tra qualche secondo.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -220,51 +173,20 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return products.find((p) => p.id === id);
   };
 
-  // CRUD Functions
+  // CRUD Functions - Strictly persisted on MongoDB before updating state
   const addProduct = async (newProdData: Omit<Product, 'id'>): Promise<Product> => {
-    const id = `p-${Date.now()}`;
-    const finalImg = newProdData.imageUrl || newProdData.img || '';
-    const product: Product = {
-      ...newProdData,
-      id,
-      slug: newProdData.slug || newProdData.name.toLowerCase().replace(/\s+/g, '-'),
-      img: finalImg,
-      imageUrl: finalImg,
-      isFuneralTribute: newProdData.category === 'funebre' || !!newProdData.isFuneralTribute,
-    };
-
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await adminFetch('/admin/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(product),
-        });
-        if (res.ok) {
-          const savedFromDb: Product = await res.json();
-          const normalized: Product = {
-            ...product,
-            ...savedFromDb,
-            img: savedFromDb.imageUrl || savedFromDb.img || finalImg,
-            imageUrl: savedFromDb.imageUrl || savedFromDb.img || finalImg,
-          };
-          setProducts((prev) => [normalized, ...prev]);
-          return normalized;
-        }
-      } catch (e) {
-        console.warn('Backend product creation failed, saved locally:', e);
-      }
-    }
-
-    setProducts((prev) => [product, ...prev]);
-    return product;
+    setCatalogError(null);
+    const savedProduct = await apiCreateProduct(newProdData);
+    setProducts((prev) => [savedProduct, ...prev]);
+    return savedProduct;
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {
+    setCatalogError(null);
     const existing = products.find((p) => p.id === id);
-    if (!existing) throw new Error('Product not found');
+    if (!existing) {
+      throw new Error('Prodotto non trovato nel catalogo.');
+    }
 
     const finalImg =
       updates.imageUrl !== undefined
@@ -273,7 +195,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ? updates.img
         : existing.imageUrl || existing.img;
 
-    const updatedProduct: Product = {
+    const merged: Product = {
       ...existing,
       ...updates,
       img: finalImg,
@@ -283,48 +205,15 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         !!(updates.isFuneralTribute ?? existing.isFuneralTribute),
     };
 
-    setProducts((prev) => prev.map((p) => (p.id === id ? updatedProduct : p)));
-
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await adminFetch(`/admin/products/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProduct),
-        });
-        if (res.ok) {
-          const savedFromDb: Product = await res.json();
-          const normalized: Product = {
-            ...updatedProduct,
-            ...savedFromDb,
-            img: savedFromDb.imageUrl || savedFromDb.img || finalImg,
-            imageUrl: savedFromDb.imageUrl || savedFromDb.img || finalImg,
-          };
-          setProducts((prev) => prev.map((p) => (p.id === id ? normalized : p)));
-          return normalized;
-        }
-      } catch (e) {
-        console.warn('Backend product update failed, saved locally:', e);
-      }
-    }
-
-    return updatedProduct;
+    const savedProduct = await apiUpdateProduct(id, merged);
+    setProducts((prev) => prev.map((p) => (p.id === id ? savedProduct : p)));
+    return savedProduct;
   };
 
   const deleteProduct = async (id: string): Promise<boolean> => {
+    setCatalogError(null);
+    await apiDeleteProduct(id);
     setProducts((prev) => prev.filter((p) => p.id !== id));
-
-    if (!siteConfig.api.useMock) {
-      try {
-        await adminFetch(`/admin/products/${id}`, {
-          method: 'DELETE',
-        });
-      } catch (e) {
-        console.warn('Backend delete failed, updated locally:', e);
-      }
-    }
     return true;
   };
 
@@ -369,24 +258,15 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateAnnouncement = (config: Partial<AnnouncementConfig>) => {
-    setAnnouncement((prev) => ({
-      ...prev,
+    const nextAnnouncement = {
+      ...announcement,
       ...config,
-    }));
+    };
+    setAnnouncement(nextAnnouncement);
 
-    if (!siteConfig.api.useMock) {
-      try {
-        adminFetch('/admin/settings', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ announcement: { ...announcement, ...config } }),
-        }).catch((e) => console.warn(e));
-      } catch (e) {
-        console.warn('Could not sync settings to backend:', e);
-      }
-    }
+    CatalogApi.updateSettings({ announcement: nextAnnouncement } as any).catch((e) =>
+      console.warn('Could not sync announcement to backend:', e)
+    );
   };
 
   const filteredProducts =
@@ -402,7 +282,9 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <CatalogContext.Provider
       value={{
         products: filteredProducts,
+        allProducts: products,
         isLoading,
+        catalogError,
         activeCategory,
         promoOffers,
         activePromo,

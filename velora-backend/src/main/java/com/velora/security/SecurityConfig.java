@@ -16,18 +16,32 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
+public class SecurityConfig implements WebMvcConfigurer {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${velora.cors.allowed-origins}")
+    @Value("${velora.cors.allowed-origins:}")
     private String allowedOrigins;
+
+    private static final List<String> DEFAULT_ALLOWED_ORIGIN_PATTERNS = List.of(
+        "https://www.velorafiori.it",
+        "https://velorafiori.it",
+        "https://velora-six-kappa.vercel.app",
+        "https://*.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000"
+    );
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -58,34 +72,37 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Allow all Vercel domains, custom domain velorafiori.it, and local dev
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "https://*.vercel.app",
-            "https://velora-six-kappa.vercel.app",
-            "https://velorafiori.it",
-            "https://www.velorafiori.it",
-            "http://velorafiori.it",
-            "http://www.velorafiori.it",
-            "http://localhost:[*]",
-            "http://127.0.0.1:[*]",
-            "*"
-        ));
-
+    private List<String> resolveAllowedOriginPatterns() {
+        List<String> patterns = new ArrayList<>(DEFAULT_ALLOWED_ORIGIN_PATTERNS);
         if (allowedOrigins != null && !allowedOrigins.isBlank()) {
             for (String origin : allowedOrigins.split(",")) {
                 String trimmed = origin.trim();
-                if (!trimmed.isEmpty()) {
-                    configuration.addAllowedOriginPattern(trimmed);
+                if (!trimmed.isEmpty() && !patterns.contains(trimmed)) {
+                    patterns.add(trimmed);
                 }
             }
         }
+        return patterns;
+    }
 
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        List<String> originPatterns = resolveAllowedOriginPatterns();
+        registry.addMapping("/**")
+            .allowedOriginPatterns(originPatterns.toArray(new String[0]))
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+            .allowedHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "*")
+            .exposedHeaders("Authorization", "Content-Type")
+            .allowCredentials(true)
+            .maxAge(3600);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(resolveAllowedOriginPatterns());
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -105,4 +122,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

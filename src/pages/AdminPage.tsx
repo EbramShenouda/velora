@@ -40,7 +40,10 @@ interface AdminPageProps {
 export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   const { isAuthenticated, user, login, changeCredentials, logout, isLoading: authLoading } = useAuth();
   const {
-    products,
+    allProducts: products,
+    isLoading: catalogLoading,
+    catalogError,
+    refreshCatalog,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -53,6 +56,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     refreshOrders,
     updateOrderStatus,
   } = useCatalog();
+
+  const [crudMessage, setCrudMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // 1. Login Form State (Strictly EMPTY by default, zero precompiled credentials)
   const [usernameInput, setUsernameInput] = useState('');
@@ -167,15 +172,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   };
 
   const handleSaveProduct = async (productData: Partial<Product>) => {
+    setCrudMessage(null);
     if (selectedProduct) {
       await updateProduct(selectedProduct.id, productData);
+      setCrudMessage({ type: 'success', text: 'Prodotto aggiornato con successo su MongoDB!' });
     } else {
       await addProduct(productData as Omit<Product, 'id'>);
+      setCrudMessage({ type: 'success', text: 'Nuova creazione salvata con successo su MongoDB!' });
     }
+    setTimeout(() => setCrudMessage(null), 4000);
   };
 
   const handleDeleteProduct = async (id: string) => {
-    await deleteProduct(id);
+    setCrudMessage(null);
+    try {
+      await deleteProduct(id);
+      setCrudMessage({ type: 'success', text: 'Articolo eliminato definitivamente da MongoDB.' });
+      setTimeout(() => setCrudMessage(null), 4000);
+    } catch (err: any) {
+      setCrudMessage({
+        type: 'error',
+        text: err?.message || 'Errore durante l’eliminazione dal database MongoDB.',
+      });
+    }
   };
 
   // Save Logistics Delivery Pricing Settings
@@ -510,7 +529,46 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
             =================================================================== */}
         {activeTab === 'catalog' && (
           <div className="space-y-5">
-            
+            {catalogLoading && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2.5">
+                <RefreshCw className="w-4 h-4 animate-spin text-clay shrink-0" />
+                <span>Sincronizzazione catalogo con MongoDB (Render) in corso...</span>
+              </div>
+            )}
+
+            {catalogError && (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{catalogError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={refreshCatalog}
+                  className="px-3 py-1.5 rounded-lg bg-rose-700 text-white font-bold uppercase text-[10px] shrink-0"
+                >
+                  Riprova
+                </button>
+              </div>
+            )}
+
+            {crudMessage && (
+              <div
+                className={`p-3.5 rounded-2xl border text-xs flex items-center gap-2 ${
+                  crudMessage.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    : 'bg-rose-50 border-rose-200 text-rose-900'
+                }`}
+              >
+                {crudMessage.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span>{crudMessage.text}</span>
+              </div>
+            )}
+
             {/* Filter and Search Bar */}
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
               
@@ -526,15 +584,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 />
               </div>
 
-              {/* Action: Add new product button */}
-              <button
-                type="button"
-                onClick={handleOpenCreateModal}
-                className="px-5 py-2.5 rounded-xl bg-botanical-950 hover:bg-clay text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Aggiungi Creazione</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={refreshCatalog}
+                  className="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-botanical-950 text-xs font-bold transition-all flex items-center gap-1.5"
+                  title="Ricarica catalogo da MongoDB"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-clay ${catalogLoading ? 'animate-spin' : ''}`} />
+                  <span>Sincronizza DB</span>
+                </button>
+
+                {/* Action: Add new product button */}
+                <button
+                  type="button"
+                  onClick={handleOpenCreateModal}
+                  className="px-5 py-2.5 rounded-xl bg-botanical-950 hover:bg-clay text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Aggiungi Creazione</span>
+                </button>
+              </div>
             </div>
 
             {/* Quick Filter Pills */}

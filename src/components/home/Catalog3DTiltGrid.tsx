@@ -4,14 +4,14 @@ import { useCart } from '../../context/CartContext';
 import { CategoryId, Product } from '../../types/catalog';
 import { siteConfig } from '../../config/siteConfig';
 import { getOptimizedImageUrl } from '../../services/cloudinaryService';
-import { Flame, CheckCircle, AlertCircle, ShoppingBag } from 'lucide-react';
+import { Flame, CheckCircle, AlertCircle, ShoppingBag, RefreshCw } from 'lucide-react';
 
 export const Catalog3DTiltGrid: React.FC = () => {
-  const { products, activeCategory, filterByCategory } = useCatalog();
+  const { products, allProducts, isLoading, catalogError, refreshCatalog, activeCategory, filterByCategory } = useCatalog();
   const { addToCart } = useCart();
 
   const categories: { id: CategoryId; label: string; icon?: string }[] = [
-    { id: 'all', label: `Tutti (${products.length})` },
+    { id: 'all', label: `Tutti (${allProducts.length})` },
     { id: 'bouquet', label: 'Bouquet Freschi' },
     { id: 'piante', label: 'Piante & Vasi' },
     { id: 'composizioni', label: 'Composizioni' },
@@ -58,23 +58,67 @@ export const Catalog3DTiltGrid: React.FC = () => {
           </div>
         </div>
 
-        {/* 3D Tilt Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-          {products.map((product) => (
-            <TiltCard key={product.id} product={product} onAddToCart={() => addToCart(product)} />
-          ))}
-        </div>
+        {/* Loading State (Render Cold Start / Fetching from MongoDB) */}
+        {isLoading && (
+          <div className="text-center py-20 bg-white/75 rounded-3xl border border-stone-200 p-8 shadow-sm space-y-4">
+            <RefreshCw className="w-9 h-9 text-clay animate-spin mx-auto" />
+            <p className="font-serif text-2xl sm:text-3xl text-botanical-950 font-semibold">
+              Caricamento del catalogo botanico in corso...
+            </p>
+            <p className="text-xs text-stone-500 max-w-md mx-auto">
+              Connessione al database di VELORA in corso. Se il server si sta riattivando (cold start), potrebbero volerci alcuni secondi.
+            </p>
+          </div>
+        )}
 
-        {products.length === 0 && (
-          <div className="text-center py-16 bg-white/60 rounded-3xl border border-stone-200 p-8">
-            <p className="font-serif text-2xl text-botanical-950 font-semibold">Nessun prodotto trovato in questa categoria.</p>
-            <p className="text-xs text-stone-500 mt-2">Torna a "Tutti" per esplorare l'intero catalogo botanico.</p>
+        {/* Error State (No localStorage fallback) */}
+        {!isLoading && catalogError && (
+          <div className="text-center py-16 bg-rose-50/90 rounded-3xl border border-rose-200 p-8 shadow-sm space-y-4">
+            <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
+            <p className="font-serif text-2xl sm:text-3xl text-rose-950 font-semibold">
+              Connessione al catalogo temporaneamente non disponibile
+            </p>
+            <p className="text-xs text-rose-800 max-w-lg mx-auto">
+              {catalogError}
+            </p>
             <button
-              onClick={() => filterByCategory('all')}
-              className="mt-4 px-6 py-2.5 rounded-full bg-botanical-950 text-white text-xs font-bold uppercase tracking-wider"
+              type="button"
+              onClick={refreshCatalog}
+              className="mt-2 px-6 py-3 rounded-full bg-botanical-950 hover:bg-clay text-white text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-md"
             >
-              Mostra Tutto il Catalogo
+              <RefreshCw className="w-4 h-4" />
+              <span>Riprova Caricamento</span>
             </button>
+          </div>
+        )}
+
+        {/* 3D Tilt Cards Grid */}
+        {!isLoading && !catalogError && products.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
+            {products.map((product) => (
+              <TiltCard key={product.id} product={product} onAddToCart={() => addToCart(product)} />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && !catalogError && products.length === 0 && (
+          <div className="text-center py-16 bg-white/60 rounded-3xl border border-stone-200 p-8">
+            <p className="font-serif text-2xl text-botanical-950 font-semibold">
+              {activeCategory === 'all'
+                ? 'Il catalogo è in fase di aggiornamento dalla nostra bottega.'
+                : 'Nessun prodotto trovato in questa categoria.'}
+            </p>
+            {activeCategory !== 'all' && (
+              <>
+                <p className="text-xs text-stone-500 mt-2">Torna a "Tutti" per esplorare l'intero catalogo botanico.</p>
+                <button
+                  onClick={() => filterByCategory('all')}
+                  className="mt-4 px-6 py-2.5 rounded-full bg-botanical-950 text-white text-xs font-bold uppercase tracking-wider"
+                >
+                  Mostra Tutto il Catalogo
+                </button>
+              </>
+            )}
           </div>
         )}
 

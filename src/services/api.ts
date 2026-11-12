@@ -1,190 +1,78 @@
 /**
  * VELORA - Service Layer (Clean Architecture)
- * Decoupled data provider supporting Spring Boot REST API, Supabase, or Mock fallback
+ * Pure REST API client connected exclusively to Spring Boot + MongoDB on Render
+ * (${import.meta.env.VITE_API_URL}/api/...).
+ * Zero localStorage fallback or hardcoded demo products for catalog persistence.
  */
 
 import { siteConfig } from '../config/siteConfig';
 import { Product, PromoOffer, OrderPayload, CustomerOrder, StoreSettings } from '../types/catalog';
 
-// Initial Catalog Database populated with high-end botanical products
-export const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: 'p1',
-    name: 'Bouquet "Alba Provenzale"',
-    slug: 'bouquet-alba-provenzale',
-    category: 'bouquet',
-    badge: 'Bestseller • Mazzo',
-    price: 48,
-    originalPrice: 55,
-    isPromo: true,
-    promoDiscountPct: 12,
-    stockQuantity: 14,
-    desc: 'Peonie rosa cipria, ranuncoli freschi, rose inglesi David Austin ed eucalipto profumato.',
-    longDesc: 'Ogni stelo viene reciso all\'alba e assemblato secondo la tecnica a spirale francese. Il bouquet viaggia avvolto in carta seta idrorepellente con fialetta di riserva d\'acqua alle radici per mantenere la turgidità ottimale fino a destinazione.',
-    img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Altezza 45cm • Diametro 35cm',
-    careInstructions: 'Accorciare i gambi di 1cm in obliquo e cambiare l\'acqua fresca ogni 2 giorni.',
-    isFeatured: true,
-  },
-  {
-    id: 'p2',
-    name: 'Monstera in Vaso di Terracotta',
-    slug: 'monstera-vaso-terracotta',
-    category: 'piante',
-    badge: 'Vaso Artigianale',
-    price: 44,
-    originalPrice: 44,
-    isPromo: false,
-    stockQuantity: 8,
-    desc: 'Pianta tropicale purificante h 75cm invasata in terracotta toscana lavorata a mano.',
-    longDesc: 'Splendido esemplare di Monstera Deliciosa coltivata biologicamente. Invasata con substrato drenante di perlite e corteccia di pino in autentico coccio toscano traspirante con sottovaso coordinato.',
-    img: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Altezza totale 75cm • Vaso Ø 24cm',
-    careInstructions: 'Posizione luminosa senza sole diretto. Bagnare solo a terra asciutta.',
-    isFeatured: true,
-  },
-  {
-    id: 'p3',
-    name: 'Hat-Box "Velluto Imperiale"',
-    slug: 'hat-box-velluto-imperiale',
-    category: 'composizioni',
-    badge: 'Luxury Box 🔥',
-    price: 68,
-    originalPrice: 85,
-    isPromo: true,
-    promoDiscountPct: 20,
-    stockQuantity: 5,
-    desc: '18 Rose rosse Red Naomi a bocciolo grande in cappelliera rigida avorio con riserva d’acqua.',
-    longDesc: 'Un\'icona di eleganza senza tempo. Le leggendarie rose olandesi Red Naomi dal profumo vellutato disposte armoniosamente in cappelliera rigida goffrata con logo VELORA impresso a caldo.',
-    img: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Diametro 28cm • Altezza 30cm',
-    careInstructions: 'Aggiungere mezza tazza d\'acqua al centro della spugna floreale ogni 2 giorni.',
-    isFeatured: true,
-  },
-  {
-    id: 'p4',
-    name: 'Mazzo "Sole di Campo"',
-    slug: 'mazzo-sole-di-campo',
-    category: 'bouquet',
-    badge: 'Appena Colti',
-    price: 39,
-    originalPrice: 39,
-    isPromo: false,
-    stockQuantity: 18,
-    desc: 'Tulipani doppi, camomilla selvatica, craspedia dorata e rami di ulivo mediterraneo.',
-    longDesc: 'L\'energia luminosa dei prati mediterranei racchiusa in una creazione campestre spontanea e raffinata. Include nastri di lino grezzo naturale.',
-    img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Altezza 40cm • Diametro 30cm',
-    careInstructions: 'Tenere lontano da fonti di calore e frutta in maturazione.',
-    isFeatured: false,
-  },
-  {
-    id: 'p5',
-    name: 'Orchidea Phalaenopsis in Coppa',
-    slug: 'orchidea-phalaenopsis-coppa',
-    category: 'piante',
-    badge: 'Vaso Ceramica',
-    price: 56,
-    originalPrice: 65,
-    isPromo: true,
-    promoDiscountPct: 14,
-    stockQuantity: 0,
-    desc: 'Orchidea bianca a cascata a doppio stelo in vaso di ceramica smaltata verde salvia.',
-    longDesc: 'Fiori candidi e duraturi fino a 3 mesi. Piantata con corteccia selezionata in vaso smaltato a mano da mastri ceramisti.',
-    img: 'https://images.unsplash.com/photo-1566907225472-514215c9e5cd?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Altezza 60cm • Vaso Ø 18cm',
-    careInstructions: 'Immergere il vaso trasparente interno in acqua per 10 minuti a settimana.',
-    isFeatured: false,
-  },
-  {
-    id: 'p6',
-    name: 'Cuscino Floreale "Candore"',
-    slug: 'cuscino-floreale-candore',
-    category: 'funebre',
-    badge: 'Arte Funebre',
-    price: 95,
-    originalPrice: 95,
-    isPromo: false,
-    stockQuantity: 10,
-    desc: 'Rose bianche avalanche, lilium orientali candidi, lisianthus e fronde nobili con nastro in oro.',
-    longDesc: 'Omaggio di profondo cordoglio e dignità. Realizzato su spugna bagnata ad alta densità per garantire freschezza impeccabile per tutta la durata del rito funebre. Nastro in raso con incisione a caldo in lamina d\'oro incluso.',
-    img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Lunghezza 65cm • Larghezza 45cm',
-    careInstructions: 'Consegna diretta e puntuale curata dal nostro personale in divisa.',
-    isFeatured: true,
-    isFuneralTribute: true,
-  },
-  {
-    id: 'p7',
-    name: 'Corona Solenne "Eternità"',
-    slug: 'corona-solenne-eternita',
-    category: 'funebre',
-    badge: 'Alta Cerimonia',
-    price: 165,
-    originalPrice: 180,
-    isPromo: false,
-    stockQuantity: 6,
-    desc: 'Grande corona circolare con orchidee bianche, rose crema, ulivo e cavalletto in legno.',
-    longDesc: 'Struttura circolare maestosa da cerimonia. Include cavalletto in legno laccato e nastro commemorativo doppio in raso con lettere dorate personalizzate.',
-    img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Diametro corona 80cm • Altezza su cavalletto 160cm',
-    isFeatured: false,
-    isFuneralTribute: true,
-  },
-  {
-    id: 'p8',
-    name: 'Ficus Lyrata Bambino in Cesta',
-    slug: 'ficus-lyrata-cesta-juta',
-    category: 'piante',
-    badge: 'Tendenza Arredo',
-    price: 52,
-    originalPrice: 52,
-    isPromo: false,
-    stockQuantity: 7,
-    desc: 'Foglie a violino scultoree in coprivaso in fibra naturale di juta intrecciata.',
-    longDesc: 'Una delle piante d\'appartamento più eleganti e decorative, perfetta per impreziosire living moderni e studi professionali.',
-    img: 'https://images.unsplash.com/photo-1545241047-6083a3684587?auto=format&fit=crop&w=800&q=80',
-    dimensions: 'Altezza 85cm • Cesta Ø 26cm',
-    isFeatured: false,
-  },
-];
+// Normalize base host URL so ${API_ORIGIN}/api/... is always clean even if VITE_API_URL has a trailing slash or /api
+const rawEnvApiUrl = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://velora-jsf6.onrender.com'
+)
+  .trim()
+  .replace(/\/+$/, '');
 
-// Promo Offers active today
-export const PROMO_OFFERS: PromoOffer[] = [
-  {
-    id: 'promo-spring-2026',
-    title: 'Offerte del Giorno Botaniche',
-    subtitle: 'Fino al 20% di sconto sui nostri bestseller stagionali',
-    badgeText: 'Offerta Lampo 🔥',
-    discountCode: 'BOTANICA20',
-    discountPercentage: 20,
-    bannerNotice: '⚡ Sconto speciale applicato sulle creazioni selezionate per consegne a Roma e provincia.',
-    active: true,
-    expiresAt: 'Oggi alle 23:59',
-    featuredProductIds: ['p1', 'p3', 'p5'],
-  },
-];
+export const API_ORIGIN = rawEnvApiUrl.endsWith('/api')
+  ? rawEnvApiUrl.slice(0, -4)
+  : rawEnvApiUrl;
+
+export const API_BASE_URL = `${API_ORIGIN}/api`;
+
+// Empty initial array: all catalog products come exclusively from MongoDB
+export const INITIAL_PRODUCTS: Product[] = [];
+
+export const PROMO_OFFERS: PromoOffer[] = [];
 
 const TOKEN_KEY = 'velora_jwt_token';
 const ADMIN_CREDS_KEY = 'velora_admin_creds_v1';
 
+// Purge any legacy localStorage catalog keys from older builds
+try {
+  localStorage.removeItem('velora_custom_products_v1');
+  localStorage.removeItem('velora_custom_products_v2');
+} catch {
+  // Ignore storage access errors in private mode
+}
+
 /**
- * Ensures a valid, non-mock JWT token is available for admin requests,
- * automatically refreshing against /api/auth/login when needed.
+ * Helper to normalize a product returned from MongoDB so both `img` and `imageUrl` are populated.
+ */
+function normalizeProduct(p: Product): Product {
+  const finalImg = p.imageUrl || p.img || '';
+  return {
+    ...p,
+    img: finalImg,
+    imageUrl: finalImg,
+    isFuneralTribute: p.category === 'funebre' || !!p.isFuneralTribute,
+  };
+}
+
+/**
+ * Ensures a valid JWT token is available for protected /api/admin/** endpoints.
  */
 export async function ensureAdminJwtToken(forceRefresh = false): Promise<string | null> {
   let token = localStorage.getItem(TOKEN_KEY);
-  if (!forceRefresh && token && !token.startsWith('mock.')) {
+  if (token && token.startsWith('mock.')) {
+    localStorage.removeItem(TOKEN_KEY);
+    token = null;
+  }
+
+  if (!forceRefresh && token) {
     return token;
   }
 
   try {
     const savedCredsStr = localStorage.getItem(ADMIN_CREDS_KEY);
-    const creds = savedCredsStr
-      ? JSON.parse(savedCredsStr)
-      : { username: 'admin', password: 'velora2026!' };
+    if (!savedCredsStr) return token;
+    const creds = JSON.parse(savedCredsStr);
+    if (!creds?.username || !creds?.password) return token;
 
-    const res = await fetch(`${siteConfig.api.baseUrl}/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: creds.username, password: creds.password }),
@@ -206,12 +94,13 @@ export async function ensureAdminJwtToken(forceRefresh = false): Promise<string 
 }
 
 /**
- * Performs an authenticated admin fetch against the Spring Boot backend,
- * automatically retrying with a fresh JWT if 401/403 occurs.
+ * Performs an authenticated admin request to ${import.meta.env.VITE_API_URL}/api/admin/...
+ * Automatically attaches Authorization: Bearer <token> and retries once if token expired.
  */
 export async function adminFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
   let token = await ensureAdminJwtToken(false);
-  const url = `${siteConfig.api.baseUrl}${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}${cleanEndpoint}`;
 
   const buildHeaders = (jwt: string | null): HeadersInit => ({
     ...(options.headers || {}),
@@ -225,7 +114,7 @@ export async function adminFetch(endpoint: string, options: RequestInit = {}): P
 
   if (res.status === 401 || res.status === 403) {
     token = await ensureAdminJwtToken(true);
-    if (token && !token.startsWith('mock.')) {
+    if (token) {
       res = await fetch(url, {
         ...options,
         headers: buildHeaders(token),
@@ -236,54 +125,157 @@ export async function adminFetch(endpoint: string, options: RequestInit = {}): P
   return res;
 }
 
+// ============================================================================
+// CORE CATALOG CRUD OPERATIONS (Exclusively via ${VITE_API_URL}/api/...)
+// ============================================================================
+
 /**
- * Abstract Catalog API Layer
+ * GET ${import.meta.env.VITE_API_URL}/api/products
+ * Includes automatic retry to handle Render free-tier cold starts gracefully.
+ */
+export async function fetchProducts(category?: string): Promise<Product[]> {
+  const url =
+    category && category !== 'all'
+      ? `${API_BASE_URL}/products?category=${encodeURIComponent(category)}`
+      : `${API_BASE_URL}/products`;
+
+  const maxAttempts = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Errore server (${res.status}) nel caricamento del catalogo.`);
+      }
+
+      const data = await res.json();
+      if (!Array.isArray(data)) {
+        throw new Error('Formato risposta catalogo non valido dal server.');
+      }
+
+      return data.map(normalizeProduct);
+    } catch (err: any) {
+      lastError = err instanceof Error ? err : new Error('Errore di rete');
+      if (attempt < maxAttempts) {
+        // Wait briefly while Render wakes up from cold start
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+    }
+  }
+
+  throw new Error(
+    lastError?.message ||
+      'Il server su Render si sta avviando (cold start) o non è raggiungibile. Riprova tra qualche secondo.'
+  );
+}
+
+/**
+ * POST ${import.meta.env.VITE_API_URL}/api/admin/products
+ */
+export async function createProduct(newProdData: Omit<Product, 'id'>): Promise<Product> {
+  const id = `p-${Date.now()}`;
+  const finalImg = newProdData.imageUrl || newProdData.img || '';
+  const payload: Product = {
+    ...newProdData,
+    id,
+    slug: newProdData.slug || newProdData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    img: finalImg,
+    imageUrl: finalImg,
+    isFuneralTribute: newProdData.category === 'funebre' || !!newProdData.isFuneralTribute,
+  };
+
+  const res = await adminFetch('/admin/products', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errBody.message ||
+        `Impossibile salvare il prodotto su MongoDB (HTTP ${res.status}). Verifica di aver effettuato l'accesso come Admin.`
+    );
+  }
+
+  const saved: Product = await res.json();
+  return normalizeProduct({ ...payload, ...saved });
+}
+
+/**
+ * PUT ${import.meta.env.VITE_API_URL}/api/admin/products/${id}
+ */
+export async function updateProduct(id: string, updatedProduct: Product): Promise<Product> {
+  const finalImg = updatedProduct.imageUrl || updatedProduct.img || '';
+  const payload: Product = {
+    ...updatedProduct,
+    id,
+    img: finalImg,
+    imageUrl: finalImg,
+    isFuneralTribute:
+      updatedProduct.category === 'funebre' || !!updatedProduct.isFuneralTribute,
+  };
+
+  const res = await adminFetch(`/admin/products/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errBody.message ||
+        `Impossibile aggiornare il prodotto su MongoDB (HTTP ${res.status}).`
+    );
+  }
+
+  const saved: Product = await res.json();
+  return normalizeProduct({ ...payload, ...saved });
+}
+
+/**
+ * DELETE ${import.meta.env.VITE_API_URL}/api/admin/products/${id}
+ */
+export async function deleteProduct(id: string): Promise<boolean> {
+  const res = await adminFetch(`/admin/products/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errBody.message ||
+        `Impossibile eliminare il prodotto da MongoDB (HTTP ${res.status}).`
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Service Layer Facade
  */
 export const CatalogApi = {
-  /**
-   * Fetch catalog products with optional filtering.
-   * Returns Product[] from server (even if empty []), or null if backend is unreachable.
-   */
-  async getProducts(category?: string): Promise<Product[] | null> {
-    if (!siteConfig.api.useMock) {
-      try {
-        const url = category && category !== 'all'
-          ? `${siteConfig.api.baseUrl}/products?category=${category}`
-          : `${siteConfig.api.baseUrl}/products`;
-        const res = await fetch(url, { cache: 'no-store' });
-        if (res.ok) {
-          const data: Product[] = await res.json();
-          return Array.isArray(data) ? data : null;
-        }
-      } catch (err) {
-        console.warn('API fetch failed, keeping local dataset:', err);
-      }
-      return null;
-    }
+  getProducts: fetchProducts,
+  fetchProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 
-    // Local mock behavior
-    await new Promise((r) => setTimeout(r, 120));
-    if (!category || category === 'all') return INITIAL_PRODUCTS;
-    if (category === 'promo') return INITIAL_PRODUCTS.filter((p) => p.isPromo);
-    return INITIAL_PRODUCTS.filter((p) => p.category === category);
-  },
-
-  /**
-   * Fetch active promo offers
-   */
   async getActivePromos(): Promise<PromoOffer[]> {
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await fetch(`${siteConfig.api.baseUrl}/promos/active`);
-        if (res.ok) return await res.json();
-      } catch (err) {
-        console.warn('Promos API failed, falling back:', err);
-      }
-    }
-    return PROMO_OFFERS.filter((p) => p.active);
+    return PROMO_OFFERS;
   },
 
-  /** Submit an order and save it locally for the admin dashboard. */
+  /**
+   * POST ${import.meta.env.VITE_API_URL}/api/orders
+   */
   async submitOrder(order: OrderPayload): Promise<{ success: boolean; orderId: string; message: string }> {
     const orderId = order.orderId || `VEL-${Math.floor(1000 + Math.random() * 9000)}`;
     const fullOrder: CustomerOrder = {
@@ -293,147 +285,83 @@ export const CatalogApi = {
       createdAt: order.createdAt || new Date().toISOString(),
     };
 
-    // Always update local admin orders list for instant reflection in Dashboard
-    try {
-      const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
-      const existingStr = localStorage.getItem(LOCAL_ORDERS_KEY);
-      const list: CustomerOrder[] = existingStr ? JSON.parse(existingStr) : [];
-      list.unshift(fullOrder);
-      localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(list));
-    } catch (e) {
-      console.warn('Could not save order to localStorage:', e);
+    const res = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fullOrder),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Errore durante il salvataggio dell'ordine sul server (${res.status}).`);
     }
 
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await fetch(`${siteConfig.api.baseUrl}/orders`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(fullOrder),
-        });
-        if (res.ok) {
-          const data = await res.json().catch(() => ({}));
-          return {
-            success: true,
-            orderId,
-            message: data.message || 'Ordine registrato con successo nel database MongoDB.',
-          };
-        }
-      } catch (err) {
-        console.warn('Backend order submission error, fallback to local confirmation:', err);
-      }
-    }
-
-    // Mock processing delay
-    await new Promise((r) => setTimeout(r, 400));
+    const data = await res.json().catch(() => ({}));
     return {
       success: true,
-      orderId,
-      message: 'Ordine confermato con successo da VELORA Atelier Botanico!',
+      orderId: data.orderId || orderId,
+      message: data.message || 'Ordine registrato con successo nel database MongoDB.',
     };
   },
 
   /**
-   * Fetch orders for Admin Dashboard (from Spring Boot MongoDB or local storage)
+   * GET ${import.meta.env.VITE_API_URL}/api/admin/orders
    */
   async getOrders(): Promise<CustomerOrder[]> {
-    const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await adminFetch('/admin/orders', { cache: 'no-store' });
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (err) {
-        console.warn('Fetch admin orders failed, falling back to local orders:', err);
-      }
+    const res = await adminFetch('/admin/orders', { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`Impossibile caricare gli ordini dal server (${res.status}).`);
     }
-
-    try {
-      const saved = localStorage.getItem(LOCAL_ORDERS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return [];
+    return await res.json();
   },
 
   /**
-   * Update status of an order (CONFIRMED, DELIVERING, COMPLETED, CANCELLED)
+   * PATCH ${import.meta.env.VITE_API_URL}/api/admin/orders/${orderId}/status
    */
   async updateOrderStatus(orderId: string, status: CustomerOrder['status']): Promise<boolean> {
-    const LOCAL_ORDERS_KEY = 'velora_admin_orders_v1';
-    try {
-      const saved = localStorage.getItem(LOCAL_ORDERS_KEY);
-      if (saved) {
-        const list: CustomerOrder[] = JSON.parse(saved);
-        const updated = list.map((o) => (o.orderId === orderId ? { ...o, status } : o));
-        localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(updated));
-      }
-    } catch {}
-
-    if (!siteConfig.api.useMock) {
-      try {
-        await adminFetch(`/admin/orders/${orderId}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status }),
-        });
-        return true;
-      } catch (e) {
-        console.warn('Backend order status update failed:', e);
-      }
-    }
-    return true;
+    const res = await adminFetch(`/admin/orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return res.ok;
   },
 
   /**
-   * Fetch Store Settings (Delivery pricing, free shipping toggle, announcement)
+   * GET ${import.meta.env.VITE_API_URL}/api/settings
    */
   async getSettings(): Promise<Partial<StoreSettings> | null> {
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await fetch(`${siteConfig.api.baseUrl}/settings`, { cache: 'no-store' });
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (err) {
-        console.warn('Fetch settings failed:', err);
-      }
+    const res = await fetch(`${API_BASE_URL}/settings`, { cache: 'no-store' });
+    if (res.ok) {
+      return await res.json();
     }
     return null;
   },
 
   /**
-   * Update Store Settings on Backend
+   * PUT ${import.meta.env.VITE_API_URL}/api/admin/settings
    */
   async updateSettings(settings: Partial<StoreSettings>): Promise<boolean> {
-    if (!siteConfig.api.useMock) {
-      try {
-        const res = await adminFetch('/admin/settings', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(settings),
-        });
-        return res.ok;
-      } catch (err) {
-        console.warn('Update settings failed:', err);
-      }
+    const res = await adminFetch('/admin/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) {
+      throw new Error(`Impossibile salvare le impostazioni su MongoDB (${res.status}).`);
     }
     return true;
   },
 
   /**
-   * Generates a beautifully formatted WhatsApp text and opens chat with the store
+   * Generates a formatted WhatsApp message URL for the store
    */
   generateWhatsAppOrderUrl(order: OrderPayload): string {
     const itemsList = order.items
       .map((it) => `• *${it.quantity}x ${it.name}* (${(it.price * it.quantity).toFixed(2)}€)\n  _${it.meta}_`)
       .join('\n');
 
-    const msg = `🌿 *NUOVO ORDINE VELORA - Atelier Botanico*\n` +
+    const msg =
+      `🌿 *NUOVO ORDINE VELORA - Atelier Botanico*\n` +
       `--------------------------------\n` +
       `📦 *Articoli ordinati:*\n${itemsList}\n\n` +
       `💌 *Biglietto a mano:* "${order.greetingCardText || 'Nessun messaggio'}"\n` +

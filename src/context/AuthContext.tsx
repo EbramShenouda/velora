@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { siteConfig } from '../config/siteConfig';
+import { API_BASE_URL } from '../services/api';
 
 interface User {
   username: string;
@@ -28,73 +29,45 @@ const USER_KEY = 'velora_auth_user';
 const ADMIN_CREDS_KEY = 'velora_admin_creds_v1';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => {
+    const saved = localStorage.getItem(TOKEN_KEY);
+    if (saved && saved.startsWith('mock.')) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
+    return saved;
+  });
+
   const [user, setUser] = useState<User | null>(() => {
     try {
+      const savedToken = localStorage.getItem(TOKEN_KEY);
+      if (!savedToken || savedToken.startsWith('mock.')) return null;
       const saved = localStorage.getItem(USER_KEY);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (!localStorage.getItem(ADMIN_CREDS_KEY)) {
-          localStorage.setItem(
-            ADMIN_CREDS_KEY,
-            JSON.stringify({ username: 'admin', password: 'velora2026!' })
-          );
-        }
-
-        // If browser has a leftover offline 'mock.' token, automatically upgrade it to a real backend JWT
-        const currentToken = localStorage.getItem(TOKEN_KEY);
-        if (!siteConfig.api.useMock && currentToken && currentToken.startsWith('mock.')) {
-          const savedCredsStr = localStorage.getItem(ADMIN_CREDS_KEY);
-          const creds = savedCredsStr
-            ? JSON.parse(savedCredsStr)
-            : { username: 'admin', password: 'velora2026!' };
-
-          try {
-            const res = await fetch(`${siteConfig.api.baseUrl}/auth/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username: creds.username, password: creds.password }),
-            });
-            if (res.ok) {
-              const data = await res.json();
-              const realJwt = data.token || data.accessToken;
-              if (realJwt) {
-                setToken(realJwt);
-                localStorage.setItem(TOKEN_KEY, realJwt);
-                setIsLoading(false);
-                return;
-              }
-            }
-          } catch {
-            // Backend unreachable during init
-          }
-          // Discard invalid mock token so user logs in cleanly against backend
-          setToken(null);
-          setUser(null);
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(USER_KEY);
-        }
-      } catch {
-        // Local storage may be unavailable in private browsing contexts.
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
+    // Discard any legacy mock token on mount
+    const currentToken = localStorage.getItem(TOKEN_KEY);
+    if (currentToken && currentToken.startsWith('mock.')) {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
   }, []);
 
   const login = async (username: string, password: string) => {
-    if (!siteConfig.api.useMock) {
+    const maxAttempts = 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const response = await fetch(`${siteConfig.api.baseUrl}/auth/login`, {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: username.trim(), password }),
@@ -121,40 +94,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const error = await response.json().catch(() => ({}));
-        return { success: false, error: error.message || 'Credenziali non valide.' };
-      } catch (error) {
-        console.warn('Backend login connection failed, checking local credentials:', error);
+        return {
+          success: false,
+          error: error.message || 'Credenziali non valide. Verifica username e password.',
+        };
+      } catch (err) {
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
+        console.error('Backend login connection failed:', err);
+        return {
+          success: false,
+          error:
+            'Il server su Render si sta avviando (cold start) o non è raggiungibile. Attendi qualche secondo e riprova.',
+        };
       }
     }
-
-    try {
-      const savedCredentials = localStorage.getItem(ADMIN_CREDS_KEY);
-      const credentials = savedCredentials
-        ? JSON.parse(savedCredentials)
-        : { username: 'admin', password: 'velora2026!' };
-
-      if (
-        username.trim().toLowerCase() !== credentials.username.toLowerCase() ||
-        password !== credentials.password
-      ) {
-        return { success: false, error: 'Credenziali non corrette. Riprova con username e password validi.' };
-      }
-
-      const authUser: User = {
-        username: credentials.username,
-        role: 'ADMIN',
-        storeName: siteConfig.brand.name,
-      };
-      const mockToken = `mock.${btoa(JSON.stringify({ sub: username, role: 'ADMIN', exp: Date.now() + 86400000 }))}.signature`;
-
-      setToken(mockToken);
-      setUser(authUser);
-      localStorage.setItem(TOKEN_KEY, mockToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
-      return { success: true };
-    } catch {
-      return { success: false, error: 'Errore imprevisto durante l’autenticazione.' };
-    }
+    return { success: false, error: 'Impossibile completare il login.' };
   };
 
   const changeCredentials = async (
@@ -162,56 +119,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     newUsername: string,
     newPassword: string
   ): Promise<{ success: boolean; message?: string; error?: string }> => {
-    if (!siteConfig.api.useMock) {
-      try {
-        const response = await fetch(`${siteConfig.api.baseUrl}/admin/credentials`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ currentPassword, newUsername: newUsername.trim(), newPassword }),
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (response.ok) {
-          if (user) {
-            const updatedUser = { ...user, username: data.username || newUsername.trim() };
-            setUser(updatedUser);
-            localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-          }
-          return { success: true, message: data.message || 'Credenziali aggiornate con successo.' };
-        }
-        return { success: false, error: data.message || 'Impossibile aggiornare le credenziali.' };
-      } catch (error) {
-        console.warn('Backend credential update failed, updating local credentials:', error);
-      }
-    }
-
     try {
-      const savedCredentials = localStorage.getItem(ADMIN_CREDS_KEY);
-      const credentials = savedCredentials
-        ? JSON.parse(savedCredentials)
-        : { username: 'admin', password: 'velora2026!' };
+      const response = await fetch(`${API_BASE_URL}/admin/credentials`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ currentPassword, newUsername: newUsername.trim(), newPassword }),
+      });
+      const data = await response.json().catch(() => ({}));
 
-      if (currentPassword !== credentials.password) {
-        return { success: false, error: 'La password attuale inserita non è corretta.' };
+      if (response.ok) {
+        const updatedUsername = data.username || newUsername.trim();
+        if (user) {
+          const updatedUser = { ...user, username: updatedUsername };
+          setUser(updatedUser);
+          localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        }
+        localStorage.setItem(
+          ADMIN_CREDS_KEY,
+          JSON.stringify({ username: updatedUsername, password: newPassword })
+        );
+        return {
+          success: true,
+          message: data.message || 'Credenziali aggiornate con successo su MongoDB.',
+        };
       }
-
-      const updatedCredentials = {
-        username: newUsername.trim() || credentials.username,
-        password: newPassword,
+      return {
+        success: false,
+        error: data.message || 'Impossibile aggiornare le credenziali su MongoDB.',
       };
-      localStorage.setItem(ADMIN_CREDS_KEY, JSON.stringify(updatedCredentials));
-
-      if (user) {
-        const updatedUser = { ...user, username: updatedCredentials.username };
-        setUser(updatedUser);
-        localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-      }
-      return { success: true, message: 'Credenziali amministratore aggiornate con successo.' };
-    } catch {
-      return { success: false, error: 'Errore imprevisto durante il salvataggio delle credenziali.' };
+    } catch (error) {
+      console.error('Backend credential update failed:', error);
+      return {
+        success: false,
+        error: 'Errore di connessione al server durante la modifica delle credenziali.',
+      };
     }
   };
 
@@ -220,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(ADMIN_CREDS_KEY);
   };
 
   return (

@@ -37,42 +37,41 @@ const TRIBUTES: TributeOption[] = [
 ];
 
 export const FuneralConfigurator: React.FC = () => {
-  const { products, setIsSolemnMode } = useCatalog();
+  const { allProducts, setIsSolemnMode } = useCatalog();
   const { addFuneralTributeToCart } = useCart();
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Dynamically load funeral tributes from the shared catalog context so changes in Admin are reflected here
+  // Dynamically load funeral tributes exclusively from MongoDB catalog (zero hardcoded fallback)
   const availableTributes: TributeOption[] = useMemo(() => {
-    const list = products.filter((p) => p.category === 'funebre' || p.isFuneralTribute);
-    if (list.length > 0) {
-      return list.map((p) => ({
-        id: p.id,
-        name: p.name,
-        price: p.price,
-        badge: p.badge || 'Arte Funebre',
-        desc: p.desc,
-        img: p.imageUrl || p.img,
-        stockQuantity: p.stockQuantity,
-      }));
-    }
-    return TRIBUTES;
-  }, [products]);
+    const list = allProducts.filter((p) => p.category === 'funebre' || p.isFuneralTribute);
+    return list.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      badge: p.badge || 'Arte Funebre',
+      desc: p.desc,
+      img: p.imageUrl || p.img,
+      stockQuantity: p.stockQuantity,
+    }));
+  }, [allProducts]);
 
-  const [selectedTribute, setSelectedTribute] = useState<TributeOption>(availableTributes[0] || TRIBUTES[0]);
-  const [ribbonText, setRibbonText] = useState<string>('Con profondo affetto e stima, Famiglia Rossi');
+  const [selectedTribute, setSelectedTribute] = useState<TributeOption | null>(availableTributes[0] || null);
+  const [ribbonText, setRibbonText] = useState<string>('');
   const [venueType, setVenueType] = useState<FuneralConfig['venueType']>('Chiesa / Parrocchia');
   const [ceremonyTime, setCeremonyTime] = useState<FuneralConfig['ceremonyTime']>('Entro le ore 09:30');
-  const [venueDetail, setVenueDetail] = useState<string>('Chiesa di Santa Maria in Trastevere');
+  const [venueDetail, setVenueDetail] = useState<string>('');
 
   // Keep selectedTribute in sync when availableTributes updates from Admin
   useEffect(() => {
     if (availableTributes.length > 0) {
-      const match = availableTributes.find((t) => t.id === selectedTribute.id);
+      const match = selectedTribute ? availableTributes.find((t) => t.id === selectedTribute.id) : null;
       if (match) {
         setSelectedTribute(match);
       } else {
         setSelectedTribute(availableTributes[0]);
       }
+    } else {
+      setSelectedTribute(null);
     }
   }, [availableTributes]);
 
@@ -95,6 +94,7 @@ export const FuneralConfigurator: React.FC = () => {
   }, [setIsSolemnMode]);
 
   const handleAddToCart = () => {
+    if (!selectedTribute) return;
     const config: FuneralConfig = {
       tributeId: selectedTribute.id,
       tributeName: selectedTribute.name,
@@ -142,8 +142,18 @@ export const FuneralConfigurator: React.FC = () => {
           
           {/* Left Column: Tributes Selection Cards */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {availableTributes.length === 0 && (
+              <div className="sm:col-span-2 bg-stone-900/90 rounded-3xl p-8 border border-stone-700/80 text-center space-y-2">
+                <p className="font-serif text-2xl text-white font-semibold">
+                  Nessun omaggio funebre configurato al momento.
+                </p>
+                <p className="text-xs text-stone-400">
+                  Contattaci direttamente su WhatsApp o aggiungi composizioni nella categoria "Arte Funebre" dalla Dashboard Admin.
+                </p>
+              </div>
+            )}
             {availableTributes.map((tribute) => {
-              const isSelected = selectedTribute.id === tribute.id;
+              const isSelected = selectedTribute?.id === tribute.id;
               const isOutOfStock = tribute.stockQuantity !== undefined && tribute.stockQuantity <= 0;
               return (
                 <div
@@ -218,12 +228,14 @@ export const FuneralConfigurator: React.FC = () => {
                   Personalizzazione Omaggio
                 </span>
                 <h4 className="font-serif text-2xl sm:text-3xl text-white font-semibold mt-0.5">
-                  {selectedTribute.name}
+                  {selectedTribute ? selectedTribute.name : 'Seleziona un Omaggio'}
                 </h4>
               </div>
-              <span className="text-2xl font-bold text-amber-300 shrink-0">
-                {selectedTribute.price},00 €
-              </span>
+              {selectedTribute && (
+                <span className="text-2xl font-bold text-amber-300 shrink-0">
+                  {selectedTribute.price},00 €
+                </span>
+              )}
             </div>
 
             {/* Ribbon Input + Gold Foil Live Calligraphic Preview */}
@@ -308,8 +320,9 @@ export const FuneralConfigurator: React.FC = () => {
             {/* Submit Action */}
             <button
               type="button"
+              disabled={!selectedTribute}
               onClick={handleAddToCart}
-              className="w-full py-4 bg-amber-400 hover:bg-amber-300 text-stone-950 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95"
+              className="w-full py-4 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed text-stone-950 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95"
             >
               <span>Aggiungi Omaggio con Nastro al Carrello</span>
               <Send className="w-3.5 h-3.5" />

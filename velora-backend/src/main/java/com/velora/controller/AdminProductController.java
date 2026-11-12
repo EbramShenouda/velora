@@ -47,6 +47,10 @@ public class AdminProductController {
         if (product.getSlug() == null || product.getSlug().isBlank()) {
             product.setSlug(product.getName().toLowerCase().replaceAll("[^a-z0-9]+", "-"));
         }
+        if ((product.getImg() == null || product.getImg().isBlank()) && product.getImageUrl() != null) {
+            product.setImg(product.getImageUrl());
+        }
+        product.setFuneralTribute("funebre".equalsIgnoreCase(product.getCategory()) || product.isFuneralTribute());
         product.setCreatedAt(Instant.now());
         product.setUpdatedAt(Instant.now());
 
