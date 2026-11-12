@@ -1,66 +1,31 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X, ArrowRight, Sparkles } from 'lucide-react';
-import { AppleCardCollection } from '../../types/catalog';
+import { EditorialSoul } from '../../types/catalog';
 import { siteConfig } from '../../config/siteConfig';
-
-const APPLE_COLLECTIONS: AppleCardCollection[] = [
-  {
-    id: 1,
-    tag: 'Reparto 01 • Giornaliero',
-    title: 'Bouquet d\'Autore & Fiori Recisi',
-    subtitle: 'Peonie, ranuncoli, rose David Austin ed eucalipto',
-    img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=1000&q=80',
-    desc: 'Ogni mattina all\'alba il nostro mastro fiorista seleziona le migliori varietà botaniche dai mercati floreali di Sanremo e internazionali. I mazzi sono legati rigorosamente a mano con fusto idratato per preservare il profumo fino al momento della consegna.',
-    highlights: [
-      'Garantiti freschi per 7+ giorni',
-      'Fialetta d\'acqua inclusa sul gambo',
-      'Carta cotone cerata di manifattura italiana',
-    ],
-  },
-  {
-    id: 2,
-    tag: 'Reparto 02 • Indoor Design',
-    title: 'Piante & Vasi d\'Arredo in Terracotta',
-    subtitle: 'Monstera variegata, Ficus Lyrata e vasi toscani',
-    img: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1000&q=80',
-    desc: 'Verde purificante da interni invasato con miscele organiche studiate per durare anni in appartamento. I nostri vasi sono forgiati al tornio da maestri toscani con argilla porosa a traspirazione naturale.',
-    highlights: [
-      'Terrecotte di Impruneta certificate',
-      'Scheda botanica di cura inclusa',
-      'Substrato arricchito con micorrize attive',
-    ],
-  },
-  {
-    id: 3,
-    tag: 'Reparto 03 • Cerimonie',
-    title: 'Eventi, Lauree & Matrimoni',
-    subtitle: 'Corone d\'alloro, Hat-Box e centrotavola scenografici',
-    img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1000&q=80',
-    desc: 'La scenografia botanica come espressione d\'arte. Progettiamo allestimenti per lauree, nozze e cene di gala con fiori rari e combinazioni cromatiche su misura.',
-    highlights: [
-      'Consulenza floreale personalizzata',
-      'Nastri in raso e velluto coordinati',
-      'Consegna e posizionamento sul luogo dell\'evento',
-    ],
-  },
-  {
-    id: 4,
-    tag: 'Reparto 04 • Cordoglio',
-    title: 'Arte Funebre & Omaggi di Memoria',
-    subtitle: 'Cuscini, corone e nastro in raso con lettere d\'oro',
-    img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1000&q=80',
-    desc: 'Il massimo rispetto e puntualità per il momento del cordoglio. Composizioni sobrie, eleganti e discrete con nastro commemorativo in raso con stampa a caldo in lamina d\'oro.',
-    highlights: [
-      'Consegna prioritaria e puntuale in Chiesa / Ospedale',
-      'Stampa nastro in oro zecchino compresa',
-      'Fiori ad altissima tenuta idrica',
-    ],
-  },
-];
+import { fetchSouls } from '../../services/api';
+import { getOptimizedImageUrl } from '../../services/cloudinaryService';
+import { BotanicalSpinner } from '../layout/BotanicalSpinner';
 
 export const AppleCardsCarousel: React.FC = () => {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [selectedCollection, setSelectedCollection] = useState<AppleCardCollection | null>(null);
+  const [souls, setSouls] = useState<EditorialSoul[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCollection, setSelectedCollection] = useState<EditorialSoul | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSouls()
+      .then((list) => {
+        if (!cancelled) setSouls(list);
+      })
+      .catch((err) => console.warn('Could not load Le Quattro Anime from MongoDB:', err))
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const scrollTrack = (direction: 'left' | 'right') => {
     const track = trackRef.current;
@@ -92,6 +57,10 @@ export const AppleCardsCarousel: React.FC = () => {
     const el = document.getElementById('catalogo-3d');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
+
+  if (!isLoading && souls.length === 0) {
+    return null;
+  }
 
   return (
     <>
@@ -133,23 +102,34 @@ export const AppleCardsCarousel: React.FC = () => {
         </div>
 
         {/* Horizontal Carousel Track */}
+        {isLoading ? (
+          <div className="py-24">
+            <BotanicalSpinner
+              tone="dark"
+              title="Stiamo componendo le Quattro Anime..."
+              subtitle="Il server si sta risvegliando: pochi istanti."
+            />
+          </div>
+        ) : (
         <div
           ref={trackRef}
           onScroll={handleScroll}
           className="apple-carousel-track flex gap-6 sm:gap-7 overflow-x-auto px-4 sm:px-6 max-w-7xl mx-auto pb-6"
         >
-          {APPLE_COLLECTIONS.map((col) => (
+          {souls.map((col) => (
             <div
               key={col.id}
               onClick={() => setSelectedCollection(col)}
-              className="apple-card-item relative shrink-0 w-[300px] sm:w-[380px] h-[480px] sm:h-[540px] rounded-[2.2rem] overflow-hidden cursor-pointer group border border-white/15 shadow-2xl transition-transform duration-500 hover:-translate-y-2 select-none"
+              className="apple-card-item relative shrink-0 w-[300px] sm:w-[380px] h-[480px] sm:h-[540px] rounded-[2.2rem] overflow-hidden cursor-pointer group border border-white/15 shadow-2xl transition-transform duration-500 hover:-translate-y-2 select-none bg-botanical-950"
             >
-              <img
-                src={col.img}
-                alt={col.title}
-                className="apple-parallax-img w-[125%] max-w-none h-full object-cover -ml-[12%] transition-transform duration-300 pointer-events-none"
-                loading="lazy"
-              />
+              {col.imageUrl && (
+                <img
+                  src={getOptimizedImageUrl(col.imageUrl, 1000)}
+                  alt={col.title}
+                  className="apple-parallax-img w-[125%] max-w-none h-full object-cover -ml-[12%] transition-transform duration-300 pointer-events-none"
+                  loading="lazy"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/20 to-black/90 pointer-events-none" />
 
               {/* Card Top Information */}
@@ -165,7 +145,7 @@ export const AppleCardsCarousel: React.FC = () => {
               {/* Card Bottom Details & Expand Trigger */}
               <div className="absolute bottom-7 left-7 right-7 flex items-end justify-between pointer-events-none">
                 <p className="text-xs text-stone-200 max-w-[220px] leading-relaxed">
-                  {col.subtitle}
+                  {col.shortDescription}
                 </p>
                 <span className="w-11 h-11 rounded-full bg-white text-botanical-950 flex items-center justify-center font-bold text-lg group-hover:bg-clay group-hover:text-white transition-colors shadow-lg shrink-0">
                   +
@@ -174,6 +154,7 @@ export const AppleCardsCarousel: React.FC = () => {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* Expandable Apple Card Modal */}
@@ -183,11 +164,13 @@ export const AppleCardsCarousel: React.FC = () => {
             
             {/* Modal Image Header */}
             <div className="relative h-64 sm:h-80 shrink-0">
-              <img
-                src={selectedCollection.img}
-                alt={selectedCollection.title}
-                className="w-full h-full object-cover"
-              />
+              {selectedCollection.imageUrl && (
+                <img
+                  src={getOptimizedImageUrl(selectedCollection.imageUrl, 1200)}
+                  alt={selectedCollection.title}
+                  className="w-full h-full object-cover"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
               
               <button
@@ -210,24 +193,9 @@ export const AppleCardsCarousel: React.FC = () => {
 
             {/* Modal Body */}
             <div className="p-6 sm:p-8 space-y-6 overflow-y-auto">
-              <p className="text-stone-700 text-sm sm:text-base leading-relaxed">
-                {selectedCollection.desc}
+              <p className="text-stone-700 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                {selectedCollection.fullDescription}
               </p>
-
-              {/* Highlights List */}
-              <div className="space-y-2">
-                <span className="text-xs uppercase font-bold tracking-wider text-botanical-900 block">
-                  Caratteristiche Artigianali:
-                </span>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-600">
-                  {selectedCollection.highlights.map((h, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-clay" />
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
 
               {/* Bottom CTA Box */}
               <div className="p-4 sm:p-5 rounded-2xl bg-botanical-50 border border-botanical-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

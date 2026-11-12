@@ -15,27 +15,6 @@ interface TributeOption {
   stockQuantity?: number;
 }
 
-const TRIBUTES: TributeOption[] = [
-  {
-    id: 'p6',
-    name: 'Cuscino Floreale "Candore"',
-    price: 95,
-    badge: 'Nastro Oro Incluso',
-    desc: 'Rose bianche avalanche, lilium orientali candidi, lisianthus e fronde nobili su spugna bagnata.',
-    img: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=800&q=80',
-    stockQuantity: 10,
-  },
-  {
-    id: 'p7',
-    name: 'Corona su Cavalletto "Eternità"',
-    price: 165,
-    badge: 'Alta Cerimonia',
-    desc: 'Grande corona circolare lavorata a mano con orchidee bianche, rose crema e rami di ulivo.',
-    img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=800&q=80',
-    stockQuantity: 6,
-  },
-];
-
 export const FuneralConfigurator: React.FC = () => {
   const { allProducts, setIsSolemnMode } = useCatalog();
   const { addFuneralTributeToCart } = useCart();

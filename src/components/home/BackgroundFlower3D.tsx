@@ -303,10 +303,6 @@ export const BackgroundFlower3D: React.FC<BackgroundFlower3DProps> = ({ classNam
               isSolemnMode ? 'bg-stone-300' : 'bg-pink-400'
             }`}
           />
-          <span className="font-medium tracking-wide">
-            Rosa Rosa 3D • Sboccio:{' '}
-            <strong className="text-petal font-mono">{bloomPercent}%</strong>
-          </span>
           <span
             className={`hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-semibold ${
               isSolemnMode ? 'bg-white/20 text-stone-200' : 'bg-pink-900/60 text-pink-200 border border-pink-400/30'

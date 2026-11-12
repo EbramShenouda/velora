@@ -60,6 +60,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/settings/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/souls/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 // Protected admin endpoints

@@ -137,13 +137,13 @@ export interface OrderPayload {
   createdAt?: string;
 }
 
-export interface AppleCardCollection {
-  id: number;
+export interface EditorialSoul {
+  id: string; // soul-1 .. soul-4
+  orderIndex: number; // 1..4
   tag: string;
   title: string;
-  subtitle: string;
-  img: string;
-  desc: string;
-  highlights: string[];
+  shortDescription: string;
+  fullDescription: string;
+  imageUrl: string;
 }
 

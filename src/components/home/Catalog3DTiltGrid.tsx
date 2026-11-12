@@ -5,6 +5,7 @@ import { CategoryId, Product } from '../../types/catalog';
 import { siteConfig } from '../../config/siteConfig';
 import { getOptimizedImageUrl } from '../../services/cloudinaryService';
 import { Flame, CheckCircle, AlertCircle, ShoppingBag, RefreshCw } from 'lucide-react';
+import { BotanicalSpinner } from '../layout/BotanicalSpinner';
 
 export const Catalog3DTiltGrid: React.FC = () => {
   const { products, allProducts, isLoading, catalogError, refreshCatalog, activeCategory, filterByCategory } = useCatalog();
@@ -60,14 +61,11 @@ export const Catalog3DTiltGrid: React.FC = () => {
 
         {/* Loading State (Render Cold Start / Fetching from MongoDB) */}
         {isLoading && (
-          <div className="text-center py-20 bg-white/75 rounded-3xl border border-stone-200 p-8 shadow-sm space-y-4">
-            <RefreshCw className="w-9 h-9 text-clay animate-spin mx-auto" />
-            <p className="font-serif text-2xl sm:text-3xl text-botanical-950 font-semibold">
-              Caricamento del catalogo botanico in corso...
-            </p>
-            <p className="text-xs text-stone-500 max-w-md mx-auto">
-              Connessione al database di VELORA in corso. Se il server si sta riattivando (cold start), potrebbero volerci alcuni secondi.
-            </p>
+          <div className="py-20 bg-white/75 rounded-3xl border border-stone-200 p-8 shadow-sm">
+            <BotanicalSpinner
+              title="Stiamo preparando il catalogo botanico..."
+              subtitle="Connessione al database di VELORA in corso. Se il server si sta riattivando, potrebbero volerci alcuni secondi."
+            />
           </div>
         )}
 
@@ -105,9 +103,14 @@ export const Catalog3DTiltGrid: React.FC = () => {
           <div className="text-center py-16 bg-white/60 rounded-3xl border border-stone-200 p-8">
             <p className="font-serif text-2xl text-botanical-950 font-semibold">
               {activeCategory === 'all'
-                ? 'Il catalogo è in fase di aggiornamento dalla nostra bottega.'
+                ? 'Catalogo in aggiornamento'
                 : 'Nessun prodotto trovato in questa categoria.'}
             </p>
+            {activeCategory === 'all' && (
+              <p className="text-xs text-stone-500 mt-2">
+                Le nuove creazioni della nostra bottega arriveranno a breve.
+              </p>
+            )}
             {activeCategory !== 'all' && (
               <>
                 <p className="text-xs text-stone-500 mt-2">Torna a "Tutti" per esplorare l'intero catalogo botanico.</p>

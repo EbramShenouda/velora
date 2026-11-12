@@ -50,7 +50,7 @@ const storeAddress = import.meta.env.VITE_STORE_ADDRESS || 'Via Nomentana 38, 00
 const mapsQuery =
   import.meta.env.VITE_STORE_MAPS_QUERY || 'Via Nomentana 38, 00013 Tor Lupara, Fonte Nuova RM';
 const encodedQuery = encodeURIComponent(mapsQuery);
-const whatsappNumber = (import.meta.env.VITE_STORE_WHATSAPP || '+393401234567').replace(/[^0-9]/g, '');
+const whatsappNumber = (import.meta.env.VITE_STORE_WHATSAPP || '+393886242062').replace(/[^0-9]/g, '');
 
 export const siteConfig: SiteConfig = {
   brand: {
@@ -60,11 +60,11 @@ export const siteConfig: SiteConfig = {
   },
   contact: {
     address: storeAddress,
-    phone: (import.meta.env.VITE_STORE_PHONE || '+39 06 555 8921').replace(/\s+/g, ''),
+    phone: (import.meta.env.VITE_STORE_PHONE || '+39 0686661480').replace(/\s+/g, ''),
     phoneDisplay: import.meta.env.VITE_STORE_PHONE || '06 555 8921',
     whatsapp: whatsappNumber,
     whatsappDirectUrl: `https://wa.me/${whatsappNumber}`,
-    email: import.meta.env.VITE_STORE_EMAIL || 'atelier@velora-botanico.it',
+    email: import.meta.env.VITE_STORE_EMAIL || 'info@velorafiori.it',
     operatingHours: '08:30 - 20:00',
     openingDays: 'Aperto 7 giorni su 7',
   },

@@ -6,7 +6,7 @@
  */
 
 import { siteConfig } from '../config/siteConfig';
-import { Product, PromoOffer, OrderPayload, CustomerOrder, StoreSettings } from '../types/catalog';
+import { Product, PromoOffer, OrderPayload, CustomerOrder, StoreSettings, EditorialSoul } from '../types/catalog';
 
 // Normalize base host URL so ${API_ORIGIN}/api/... is always clean even if VITE_API_URL has a trailing slash or /api
 const rawEnvApiUrl = (
@@ -130,16 +130,10 @@ export async function adminFetch(endpoint: string, options: RequestInit = {}): P
 // ============================================================================
 
 /**
- * GET ${import.meta.env.VITE_API_URL}/api/products
- * Includes automatic retry to handle Render free-tier cold starts gracefully.
+ * GET with automatic retry, so Render free-tier cold starts (up to ~1 minute) resolve
+ * while the UI keeps showing its loading state instead of an error.
  */
-export async function fetchProducts(category?: string): Promise<Product[]> {
-  const url =
-    category && category !== 'all'
-      ? `${API_BASE_URL}/products?category=${encodeURIComponent(category)}`
-      : `${API_BASE_URL}/products`;
-
-  const maxAttempts = 3;
+async function fetchJsonWithRetry<T>(url: string, errorLabel: string, maxAttempts = 8): Promise<T> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -151,20 +145,14 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
       });
 
       if (!res.ok) {
-        throw new Error(`Errore server (${res.status}) nel caricamento del catalogo.`);
+        throw new Error(`Errore server (${res.status}) nel caricamento di ${errorLabel}.`);
       }
 
-      const data = await res.json();
-      if (!Array.isArray(data)) {
-        throw new Error('Formato risposta catalogo non valido dal server.');
-      }
-
-      return data.map(normalizeProduct);
+      return (await res.json()) as T;
     } catch (err: any) {
       lastError = err instanceof Error ? err : new Error('Errore di rete');
       if (attempt < maxAttempts) {
-        // Wait briefly while Render wakes up from cold start
-        await new Promise((r) => setTimeout(r, 2000 * attempt));
+        await new Promise((r) => setTimeout(r, Math.min(2000 * attempt, 8000)));
       }
     }
   }
@@ -174,6 +162,55 @@ export async function fetchProducts(category?: string): Promise<Product[]> {
       'Il server su Render si sta avviando (cold start) o non è raggiungibile. Riprova tra qualche secondo.'
   );
 }
+
+/**
+ * GET ${import.meta.env.VITE_API_URL}/api/products
+ */
+export async function fetchProducts(category?: string): Promise<Product[]> {
+  const url =
+    category && category !== 'all'
+      ? `${API_BASE_URL}/products?category=${encodeURIComponent(category)}`
+      : `${API_BASE_URL}/products`;
+
+  const data = await fetchJsonWithRetry<unknown>(url, 'del catalogo');
+  if (!Array.isArray(data)) {
+    throw new Error('Formato risposta catalogo non valido dal server.');
+  }
+  return (data as Product[]).map(normalizeProduct);
+}
+
+/**
+ * GET ${import.meta.env.VITE_API_URL}/api/souls - "Le Quattro Anime" cards stored on MongoDB
+ */
+export async function fetchSouls(): Promise<EditorialSoul[]> {
+  const data = await fetchJsonWithRetry<unknown>(`${API_BASE_URL}/souls`, 'delle Quattro Anime');
+  if (!Array.isArray(data)) {
+    throw new Error('Formato risposta Quattro Anime non valido dal server.');
+  }
+  return (data as EditorialSoul[]).sort((a, b) => a.orderIndex - b.orderIndex);
+}
+
+/**
+ * PUT ${import.meta.env.VITE_API_URL}/api/admin/souls/${id}
+ */
+export async function updateSoul(soul: EditorialSoul): Promise<EditorialSoul> {
+  const res = await adminFetch(`/admin/souls/${encodeURIComponent(soul.id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(soul),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(
+      errBody.message ||
+        `Impossibile salvare la card su MongoDB (HTTP ${res.status}). Verifica di aver effettuato l'accesso come Admin.`
+    );
+  }
+
+  return (await res.json()) as EditorialSoul;
+}
+
 
 /**
  * POST ${import.meta.env.VITE_API_URL}/api/admin/products
@@ -268,6 +305,8 @@ export const CatalogApi = {
   createProduct,
   updateProduct,
   deleteProduct,
+  fetchSouls,
+  updateSoul,
 
   async getActivePromos(): Promise<PromoOffer[]> {
     return PROMO_OFFERS;

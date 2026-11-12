@@ -5,6 +5,7 @@ import { siteConfig } from '../config/siteConfig';
 import { BrandLogo } from '../components/layout/BrandLogo';
 import { ProductFormModal } from '../components/admin/ProductFormModal';
 import { AnnouncementBarEditor } from '../components/admin/AnnouncementBarEditor';
+import { SoulsEditor } from '../components/admin/SoulsEditor';
 import { Product, CategoryId, CustomerOrder } from '../types/catalog';
 import { getOptimizedImageUrl } from '../services/cloudinaryService';
 import {
@@ -31,6 +32,7 @@ import {
   MessageCircle,
   UserCheck,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -66,7 +68,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // 2. Admin Dashboard State & Active Tab
-  const [activeTab, setActiveTab] = useState<'catalog' | 'announcement' | 'logistics' | 'orders' | 'security'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'souls' | 'announcement' | 'logistics' | 'orders' | 'security'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'stock' | 'out_of_stock' | 'promo' | CategoryId>('all');
 
@@ -482,6 +484,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Ordini Ricevuti ({orders.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('souls')}
+            className={`pb-3 px-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'souls'
+                ? 'border-botanical-950 text-botanical-950 font-bold'
+                : 'border-transparent text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Sezione 4 Anime (Carosello)</span>
           </button>
 
           <button
@@ -1152,6 +1166,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         {/* ===================================================================
             TAB 4: TOP ANNOUNCEMENT & PROMO EDITOR
             =================================================================== */}
+        {activeTab === 'souls' && <SoulsEditor />}
+
         {activeTab === 'announcement' && (
           <AnnouncementBarEditor />
         )}

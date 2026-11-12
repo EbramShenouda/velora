@@ -60,7 +60,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setBadge('Novità • Mazzo');
       setDesc('Composizione floreale fresca con fiori di stagione selezionati e riserva d’acqua agli steli.');
       setDimensions('Altezza 45cm • Diametro 30cm');
-      setImg('https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80');
+      setImg('');
       setIsPromo(false);
       setDiscountedPrice(38);
       setDiscountPct(15);
